@@ -16,3 +16,5 @@
 /tmp
 /temp
 *.tmp
+supabase/.branches/
+supabase/.temp/

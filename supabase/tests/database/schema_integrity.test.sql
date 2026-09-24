@@ -2,7 +2,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions;
-select plan(8);
+select plan(9);
 
 insert into auth.users (id, email) values
   ('50000000-0000-0000-0000-000000000005', 'constraint-a@example.test'),
