@@ -1,8 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
+
+.assessment-shell { max-width: 850px; margin: auto; padding: 24px; color: #18352f; }
+.assessment-shell header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 0 30px; }
+.assessment-shell header a { font-weight: 700; text-decoration: none; }
+.assessment-shell header span, .muted, .assessment-shell footer { color: #536760; font-size: .9rem; }
+.assessment-shell footer { margin: 24px 0; }
+.assessment-card { background: #fff; border: 1px solid #dce6e0; border-radius: 20px; padding: clamp(20px,4vw,40px); box-shadow: 0 8px 32px #18352f08; }
+.assessment-shell h1 { font-size: clamp(1.6rem,4vw,2.2rem); line-height: 1.25; font-weight: 700; margin: 12px 0 20px; }
+.assessment-shell h2 { font-size: 1.15rem; font-weight: 700; margin: 22px 0 8px; }
+.assessment-shell p { line-height: 1.65; margin: 12px 0; }
+.eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; font-weight: 700; color: #356751; }
+.assessment-shell form { display: grid; gap: 24px; margin-top: 28px; }
+.form-grid, .result-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.assessment-shell label { display: block; font-weight: 500; }
+.assessment-shell select, .assessment-shell textarea { display: block; width: 100%; margin-top: 8px; border: 1px solid #81958b; border-radius: 8px; padding: 12px; background: white; font: inherit; }
+.assessment-shell fieldset { border: 0; padding: 0; margin: 20px 0; }
+.assessment-shell legend { font-weight: 600; margin-bottom: 12px; }
+.assessment-shell .assessment-stage { margin: 0; min-width: 0; }
+.assessment-shell .check { display: inline-flex; align-items: center; gap: 9px; margin: 6px 18px 6px 0; }
+.assessment-shell input { accent-color: #24684c; width: 18px; height: 18px; }
+.assessment-shell .option { border: 1px solid #b8cbc0; border-radius: 10px; padding: 14px; margin: 10px 0; display: flex; gap: 12px; align-items: center; }
+.assessment-shell button { cursor: pointer; border: 1px solid #adc1b6; padding: 11px 17px; border-radius: 9px; background: #fff; color: #18352f; font: inherit; margin: 5px 8px 5px 0; min-height: 44px; }
+.assessment-shell button.primary { background: #245d46; color: white; border-color: #245d46; font-weight: 700; }
+.assessment-shell button:disabled { opacity: .5; cursor: wait; }
+.assessment-shell :focus-visible { outline: 3px solid #c86a1f; outline-offset: 3px; }
+.assessment-shell .support, .voice { background: #eff5ef; padding: 16px; border-radius: 10px; }
+.assessment-shell .error { background: #fff2e8; border-left: 4px solid #a74b17; padding: 16px; margin: 16px 0; }
+.assessment-shell progress { width: 100%; height: 8px; accent-color: #245d46; }
+.assessment-shell .helpers { margin-top: 20px; }
+.assessment-shell .actions { border-top: 1px solid #dce6e0; padding-top: 20px; margin-top: 24px; }
+.result-grid article { background: #f3f7f3; padding: 16px; border-radius: 12px; }
+@media(max-width:540px) { .assessment-shell { padding: 14px; } .form-grid,.result-grid { grid-template-columns: 1fr; } }
 
 body {
   margin: 0;

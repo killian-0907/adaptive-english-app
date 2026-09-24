@@ -1,6 +1,10 @@
-# Adaptive English — foundation phase
+# Adaptive English — Phase 8
 
-This repository implements only the secure foundation approved for the adaptive English-learning product:
+Phase 8 now adds onboarding, adaptive initial assessment, turn-based voice provider integration, evidence-driven initialization and resumable results. See [Phase 8 architecture and operation](docs/phase-8.md). Start at `/assessment`.
+
+The foundation boundaries below remain in effect; the assessment-specific processor is documented separately.
+
+This repository preserves the secure foundation approved for the adaptive English-learning product:
 
 - Next.js App Router + TypeScript + Tailwind skeleton
 - Supabase browser, server-user, and server-admin client separation
@@ -15,7 +19,7 @@ This repository implements only the secure foundation approved for the adaptive 
 - Supabase generated-type workflow
 - Vitest and Playwright foundations
 
-It intentionally does **not** implement onboarding, assessment, learner-model update algorithms, the Adaptive Teaching Engine, Tutor/Evaluator AI, STT/TTS, payments, ad providers, dashboard, progress UI, or the final design system.
+Phase 8 adds onboarding, initial assessment and its narrow evaluator/voice/initialization services. Normal learning, the Adaptive Teaching Engine, payments, ad providers, dashboard, progress charts and a full design system remain deferred.
 
 ## Prerequisites
 
@@ -50,7 +54,7 @@ After `pnpm db:start`, run `pnpm db:status` and copy the local Supabase values i
 - publishable/anon key -> `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - service-role key -> `SUPABASE_SERVICE_ROLE_KEY`
 
-`OPENAI_API_KEY` remains a future placeholder during the foundation phase and is not required by the current application. Never place real keys in this README or commit `.env.local`.
+`OPENAI_API_KEY` is required for real TTS, STT and open-response evaluation. Deterministic assessment and saved progress remain available without it. Never place real keys in this README or commit `.env.local`.
 
 A successful `pnpm install` should create the real `pnpm-lock.yaml`; commit that generated lockfile from the normal runnable environment. Do not create a hand-written or placeholder lockfile.
 
@@ -174,7 +178,7 @@ Authoritative state is backend-only, including:
 
 `learner_model_changes` also has unique `(user_id, change_key)`, providing a second future idempotency boundary.
 
-The full evidence-processing transaction/RPC is intentionally deferred until the learner-update algorithm is implemented. AI calls must never run inside a database transaction.
+The Phase 8 assessment processor commits responses, evidence and initial state atomically. Normal-learning updates remain deferred. AI calls never run inside a database transaction.
 
 ## Entitlements
 
@@ -245,7 +249,7 @@ pnpm lint
 pnpm typecheck
 ```
 
-The Playwright suite is deliberately tiny in this phase; product UI tests come later.
+The Playwright suite covers authentication plus onboarding, deterministic assessment, resume, completion and initial state creation.
 
 ## Migrations
 
@@ -256,9 +260,9 @@ The Playwright suite is deliberately tiny in this phase; product UI tests come l
 5. `20260924000500_indexes.sql` — approved query-path indexes
 6. `20260924000600_rls_and_grants.sql` — explicit grants + RLS policies
 
-## Transaction boundary deferred intentionally
+## Normal-learning transaction boundary deferred
 
-The future evidence processor needs an atomic operation that:
+The assessment-specific processor now provides the following atomic operation; a general normal-learning processor remains out of scope:
 
 1. confirms/inserts idempotent evidence
 2. updates the relevant derived learner state
@@ -266,4 +270,4 @@ The future evidence processor needs an atomic operation that:
 4. links supporting evidence
 5. marks evidence applied
 
-That RPC is intentionally **not** implemented yet because the learner-model update algorithm is explicitly outside this phase. Creating a generic "update anything" RPC now would weaken the data-access boundary and prematurely encode business logic.
+Migration `20260924000700_initial_assessment.sql` implements only the service-role assessment transaction, resume/claim boundaries and onboarding persistence. It does not expose a client-callable generic learner-state update API.

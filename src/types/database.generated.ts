@@ -1493,7 +1493,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cache_assessment_evaluation: {
+        Args: {
+          p_activity: string
+          p_evaluation: Json
+          p_hash: string
+          p_token: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      claim_assessment_response: {
+        Args: { p_activity: string; p_token: string; p_user: string }
+        Returns: boolean
+      }
+      commit_assessment_response: {
+        Args: {
+          p_activity: string
+          p_events: Json
+          p_model: Json
+          p_response: Json
+          p_session: string
+          p_state: Json
+          p_token: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      record_assessment_support: {
+        Args: { p_activity: string; p_kind: string; p_user: string }
+        Returns: Json
+      }
+      save_assessment_onboarding: {
+        Args: { p_data: Json; p_user: string }
+        Returns: undefined
+      }
+      start_initial_assessment: { Args: { p_user: string }; Returns: string }
     }
     Enums: {
       ability_dimension:
