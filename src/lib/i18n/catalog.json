@@ -2133,5 +2133,140 @@
     "en": "Payment issue",
     "zh": "付款问题",
     "es": "Problema de pago"
+  },
+  "pwa.about": {
+    "en": "App installation and updates",
+    "zh": "应用安装与更新",
+    "es": "Instalación y actualizaciones"
+  },
+  "pwa.beta": {
+    "en": "Beta",
+    "zh": "测试版",
+    "es": "Beta"
+  },
+  "pwa.version": {
+    "en": "Version {version}",
+    "zh": "版本 {version}",
+    "es": "Versión {version}"
+  },
+  "pwa.installed": {
+    "en": "Running as an installed app.",
+    "zh": "正在以已安装应用运行。",
+    "es": "Se está ejecutando como aplicación instalada."
+  },
+  "pwa.install": {
+    "en": "Install Adaptive English",
+    "zh": "安装 Adaptive English",
+    "es": "Instalar Adaptive English"
+  },
+  "pwa.ios": {
+    "en": "To install: open the Share menu, then Add to Home Screen. If unavailable, open this page in Safari.",
+    "zh": "安装方法：打开共享菜单，然后选择“添加到主屏幕”。如无此选项，请在 Safari 中打开此页面。",
+    "es": "Para instalar: abre Compartir y Añadir a pantalla de inicio. Si no aparece, abre esta página en Safari."
+  },
+  "pwa.installUnavailable": {
+    "en": "Installation is not offered here. You can keep learning in this browser, or check its app installation menu.",
+    "zh": "此处暂不提供安装。你可以继续在此浏览器中学习，或查看浏览器的应用安装菜单。",
+    "es": "Aquí no se ofrece la instalación. Puedes seguir aprendiendo en este navegador o consultar su menú de instalación."
+  },
+  "pwa.notNow": {
+    "en": "Not now",
+    "zh": "暂不安装",
+    "es": "Ahora no"
+  },
+  "pwa.updateReady": {
+    "en": "A new version is ready. Finish and save any changes before updating.",
+    "zh": "新版本已准备就绪。请完成并保存更改后再更新。",
+    "es": "Hay una nueva versión. Termina y guarda los cambios antes de actualizar."
+  },
+  "pwa.update": {
+    "en": "Update now",
+    "zh": "立即更新",
+    "es": "Actualizar ahora"
+  },
+  "pwa.finishFirst": {
+    "en": "Finish saving your changes, then return to Home to update. Your activity will not be reloaded automatically.",
+    "zh": "请先保存更改，再返回首页更新。练习不会自动重新加载。",
+    "es": "Guarda los cambios y vuelve a Inicio para actualizar. Tu actividad no se recargará automáticamente."
+  },
+  "feedback.title": {
+    "en": "Send feedback",
+    "zh": "发送反馈",
+    "es": "Enviar comentarios"
+  },
+  "feedback.privacy": {
+    "en": "Tell us what went wrong. Only your message, category, this page, app version and browser family are included. Do not include passwords or sensitive information.",
+    "zh": "告诉我们遇到的问题。仅包含你的留言、类别、当前页面、应用版本和浏览器类型。请勿填写密码或敏感信息。",
+    "es": "Cuéntanos qué ocurrió. Solo se incluyen tu mensaje, categoría, esta página, versión y tipo de navegador. No incluyas contraseñas ni información sensible."
+  },
+  "feedback.category": {
+    "en": "Category",
+    "zh": "类别",
+    "es": "Categoría"
+  },
+  "feedback.details": {
+    "en": "Your feedback",
+    "zh": "你的反馈",
+    "es": "Tus comentarios"
+  },
+  "feedback.send": {
+    "en": "Send feedback",
+    "zh": "发送反馈",
+    "es": "Enviar comentarios"
+  },
+  "feedback.saved": {
+    "en": "Thank you. Your feedback has been saved.",
+    "zh": "谢谢，反馈已保存。",
+    "es": "Gracias. Tus comentarios se han guardado."
+  },
+  "feedback.lesson": {
+    "en": "Lesson felt wrong",
+    "zh": "课程不合适",
+    "es": "La lección no encajaba"
+  },
+  "feedback.easy": {
+    "en": "Too easy",
+    "zh": "太简单",
+    "es": "Demasiado fácil"
+  },
+  "feedback.difficult": {
+    "en": "Too difficult",
+    "zh": "太难",
+    "es": "Demasiado difícil"
+  },
+  "feedback.voice": {
+    "en": "Voice problem",
+    "zh": "语音问题",
+    "es": "Problema de voz"
+  },
+  "feedback.bug": {
+    "en": "Bug",
+    "zh": "程序错误",
+    "es": "Error"
+  },
+  "feedback.confusing": {
+    "en": "Confusing interface",
+    "zh": "界面难以理解",
+    "es": "Interfaz confusa"
+  },
+  "feedback.other": {
+    "en": "Other",
+    "zh": "其他",
+    "es": "Otro"
+  },
+  "auth.expired": {
+    "en": "This confirmation link has expired or is invalid. Request a new confirmation email.",
+    "zh": "确认链接已过期或无效。请重新请求确认邮件。",
+    "es": "Este enlace ha caducado o no es válido. Solicita otro correo de confirmación."
+  },
+  "auth.resend": {
+    "en": "Resend confirmation email",
+    "zh": "重新发送确认邮件",
+    "es": "Reenviar correo de confirmación"
+  },
+  "auth.inbox": {
+    "en": "If confirmation is needed, check your inbox and spam folder. Wait a few minutes before trying again.",
+    "zh": "如需确认，请查看收件箱和垃圾邮件。再次尝试前请等待几分钟。",
+    "es": "Si necesitas confirmar, revisa tu bandeja de entrada y correo no deseado. Espera unos minutos antes de reintentar."
   }
 }

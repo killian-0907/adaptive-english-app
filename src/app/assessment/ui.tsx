@@ -19,8 +19,9 @@ export function AssessmentClient({initialView}:{initialView:AssessmentView}) {co
   const hydrated=useSyncExternalStore(subscribeHydration,()=>true,()=>false);
   const [view,setView] = useState<AssessmentView>(initialView); const [error,setError] = useState(""); const [busy,setBusy] = useState(false);
   async function load(){try{setView(await (await api()).json());setError("");}catch(e){setError(friendlyError(e));}}
-  async function action(body:object){setBusy(true);setError("");try{setView(await (await api(body)).json());}catch(e){setError(friendlyError(e));}finally{setBusy(false);}}
-  return <main className="assessment-shell"><header><Link href="/">Adaptive English</Link><span>{t("ui.010")}</span></header>
+  const actionLock=useRef(false);
+  async function action(body:object){if(actionLock.current)return;actionLock.current=true;setBusy(true);setError("");try{setView(await (await api(body)).json());}catch(e){setError(friendlyError(e));}finally{actionLock.current=false;setBusy(false);}}
+  return <main className="assessment-shell" aria-busy={busy}><header><Link href="/">Adaptive English</Link><span>{t("ui.010")}</span></header>
     {error && <div role="alert" className="error">{t(error)} <Link href="/login">{t("Sign in")}</Link> <button onClick={load}>{t("ui.011")}</button></div>}
     <p role="status">{busy?t("Saving…"):""}</p><fieldset disabled={!hydrated || busy} className="assessment-stage"><LocaleProvider language={supportedLanguage(view.profile.interface_language)}>{view.onboarding ? <Onboarding busy={busy} onSave={data=>action({action:"onboarding",data})}/> : view.complete ? <Results result={view.result} language={view.profile.interface_language}/> : <Activity key={view.activityId} view={view} busy={busy} onAnswer={data=>action({action:"answer",data})}/>}</LocaleProvider></fieldset>
     <footer>{t("ui.012")}</footer></main>;

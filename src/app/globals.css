@@ -99,3 +99,15 @@ dialog { margin:auto; max-width:min(560px,calc(100vw - 28px)); max-height:90vh; 
 dialog::backdrop { background:#0007; }
 dialog input,.assessment-shell input[type=email],.assessment-shell input[type=password] { display:block; width:100%; border:1px solid #82978b; padding:12px; border-radius:8px; min-height:44px; }
 dialog .actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; }
+
+/* Installed layouts use the visual viewport without fixed controls over the keyboard. */
+body { padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.product-shell,.learning-product-shell { min-height:100dvh; }
+input,textarea,select { font-size:16px; max-width:100%; }
+textarea,input { scroll-margin-block:80px; }
+.product-shell textarea { display:block;width:100%;padding:12px;border:1px solid #82978b;border-radius:8px;margin:8px 0 18px; }
+.pwa-panel { max-width:1100px;margin:auto;padding:8px 16px;color:#18352f;background:#f4f6f2;overflow-wrap:anywhere; }
+.pwa-panel:empty { display:none; }
+.pwa-panel button { min-height:44px;padding:10px 14px;border:1px solid #91a897;border-radius:9px;margin:6px;background:white;cursor:pointer; }
+.pwa-panel :focus-visible { outline:3px solid #a95018;outline-offset:3px; }
+dialog { max-height:calc(100dvh - 48px); }

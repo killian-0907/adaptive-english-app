@@ -51,3 +51,19 @@ test("free E: first-listen evidence stays separate from revealed-text success",a
     const events=await f.db.from("evidence_events").select("activity_id,modality,support_level,metadata").in("activity_id",[first.activityId,second.activityId]).eq("evidence_kind","learning_performance");expect(events.data).toEqual(expect.arrayContaining([expect.objectContaining({activity_id:first.activityId,modality:"listening_recognition",support_level:0,metadata:expect.objectContaining({firstListen:true})}),expect.objectContaining({activity_id:second.activityId,modality:"reading_recognition",support_level:5,metadata:expect.objectContaining({firstListen:false})})]));
   }finally{await f.cleanup();}
 });
+
+test("free F: backgrounding stops native capture and playback without saving evidence",async({page})=>{
+  await speechMock(page);
+  await page.addInitScript(()=>{
+    class PendingRecognition {lang='';continuous=false;interimResults=true;onresult=null;onerror=null;onend=null;start(){}stop(){}abort(){document.documentElement.dataset.captureCanceled='yes';}}
+    Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:PendingRecognition});
+  });
+  const f=await fixture(page);try{
+    await page.getByRole('button',{name:'Record response',exact:true}).click();await expect(page.getByRole('button',{name:'Stop recording',exact:true})).toBeVisible();
+    await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+    await expect(page.getByRole('button',{name:'Stop recording',exact:true})).toHaveCount(0);await expect(page.locator('html')).toHaveAttribute('data-capture-canceled','yes');
+    expect((await f.db.from('voice_interactions').select('id').eq('user_id',f.user.id)).data).toEqual([]);
+    await page.getByRole('button',{name:'Record response',exact:true}).click();await expect(page.getByRole('button',{name:'Stop recording',exact:true})).toBeVisible();await page.getByRole('button',{name:'Cancel recording',exact:true}).click();
+    const before=await current(page);await page.getByRole('button',{name:'Read instead',exact:true}).click();await page.getByLabel('Your response',{exact:true}).fill('Water please');await page.getByRole('button',{name:'Check response',exact:true}).click();await expect.poll(async()=>(await current(page)).activityId).not.toBe(before.activityId);
+  }finally{await f.cleanup();}
+});

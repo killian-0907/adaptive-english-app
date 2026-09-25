@@ -9,6 +9,7 @@ export function VoiceTools({speechText,spoken,speed,enhancedAvailable,enhancedRe
   const [cap,setCap]=useState(noCapabilities);const [settings,setSettings]=useState(defaultVoiceSettings);const [voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);
   const [message,setMessage]=useState("");const [listening,setListening]=useState(false);const [playing,setPlaying]=useState(false);const [pending,setPending]=useState(false);const [draft,setDraft]=useState("");const [final,setFinal]=useState(false);
   const [failed,setFailed]=useState({enhanced:false,tts:false,stt:false});const recognition=useRef<BrowserRecognition|null>(null);const stopSpeech=useRef<(()=>void)|null>(null);const alive=useRef(true);const attempt=useRef("");const recorder=useRef<MediaRecorder|null>(null);const media=useRef<MediaStream|null>(null);const timer=useRef<ReturnType<typeof setTimeout>|null>(null);const canceled=useRef(false);const autoPlayed=useRef(false);
+  const playbackVersion=useRef(0);
   const routes=resolveVoice(cap,settings,enhancedAvailable,failed);
   useEffect(()=>{
     alive.current=true;
@@ -17,20 +18,24 @@ export function VoiceTools({speechText,spoken,speed,enhancedAvailable,enhancedRe
     // eslint-disable-next-line react-hooks/set-state-in-effect
     try{const parsed=voiceSettingsSchema.safeParse(JSON.parse(localStorage.getItem(settingsKey)??"{}"));if(parsed.success)setSettings(parsed.data);}catch{}
     window.speechSynthesis?.addEventListener("voiceschanged",update);
+    const suspend=()=>{cancel();stop();};
+    const visibility=()=>{if(document.visibilityState!=="visible")suspend();};
+    document.addEventListener("visibilitychange",visibility);window.addEventListener("pagehide",suspend);
     let permission:PermissionStatus|undefined;
     void navigator.permissions?.query({name:"microphone" as PermissionName}).then(p=>{if(!alive.current)return;permission=p;const changed=()=>setCap(c=>({...c,microphone:p.state}));changed();p.onchange=changed;}).catch(()=>{});
-    return()=>{alive.current=false;recognition.current?.cancel();stopSpeech.current?.();canceled.current=true;if(timer.current)clearTimeout(timer.current);if(recorder.current?.state==="recording")recorder.current.stop();media.current?.getTracks().forEach(t=>t.stop());window.speechSynthesis?.removeEventListener("voiceschanged",update);if(permission)permission.onchange=null;};
+    return()=>{document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pagehide",suspend);alive.current=false;recognition.current?.cancel();stopSpeech.current?.();canceled.current=true;if(timer.current)clearTimeout(timer.current);if(recorder.current?.state==="recording")recorder.current.stop();media.current?.getTracks().forEach(t=>t.stop());window.speechSynthesis?.removeEventListener("voiceschanged",update);if(permission)permission.onchange=null;};
   },[]);
   function configure(patch:Partial<VoiceSettings>){const next=voiceSettingsSchema.parse({...settings,...patch});setSettings(next);try{localStorage.setItem(settingsKey,JSON.stringify(next));window.dispatchEvent(new Event("voice-preferences"));}catch{} }
-  function stop(){stopSpeech.current?.();setPlaying(false);}
+  function stop(){playbackVersion.current++;stopSpeech.current?.();setPlaying(false);}
   async function play(){
-    stop();setMessage("");setPlaying(true);
+    stop();const version=playbackVersion.current;setMessage("");setPlaying(true);
     const native=()=>{
+      if(!alive.current||document.hidden||version!==playbackVersion.current)return;
       if(!cap.tts||failed.tts){setMessage("Audio is unavailable. Choose Read instead to continue.");setPlaying(false);return;}
       stopSpeech.current=speakBrowser(speechText??"",speed*settings.rate,settings.voice,()=>{if(alive.current){setPlaying(false);void played();}},()=>{if(alive.current){setPlaying(false);setFailed(f=>({...f,tts:true}));setMessage("Audio could not play. Choose Read instead.");}});
     };
     if(routes.tts!=="openai"){native();return;}
-    try{const response=await request({action:"tts"});const url=URL.createObjectURL(await response.blob());if(!alive.current){URL.revokeObjectURL(url);return;}const audio=new Audio(url);audio.playbackRate=Math.min(1.25,Math.max(.7,speed*settings.rate));stopSpeech.current=()=>{audio.pause();URL.revokeObjectURL(url);};audio.onended=()=>{URL.revokeObjectURL(url);if(alive.current){setPlaying(false);if(!enhancedRecordsReplay)void played();}};audio.onerror=()=>{URL.revokeObjectURL(url);if(alive.current){setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced voice is unavailable. Using browser voice.");native();}};await audio.play();}
+    try{const response=await request({action:"tts"});const url=URL.createObjectURL(await response.blob());if(!alive.current||document.hidden||version!==playbackVersion.current){URL.revokeObjectURL(url);return;}const audio=new Audio(url);audio.playbackRate=Math.min(1.25,Math.max(.7,speed*settings.rate));stopSpeech.current=()=>{audio.pause();URL.revokeObjectURL(url);};audio.onended=()=>{URL.revokeObjectURL(url);if(alive.current){setPlaying(false);if(!enhancedRecordsReplay)void played();}};audio.onerror=()=>{URL.revokeObjectURL(url);if(alive.current){setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced voice is unavailable. Using browser voice.");native();}};await audio.play();}
     catch{if(alive.current){setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced voice is unavailable. Using browser voice; your session is saved.");native();}}
   }
   // Autoplay is off by default. Persisted opt-in still respects browser gesture restrictions.
@@ -43,11 +48,11 @@ export function VoiceTools({speechText,spoken,speed,enhancedAvailable,enhancedRe
   async function record(){
     stop();setMessage("");if(routes.stt==="browser_native"){nativeRecord();return;}if(routes.stt!=="openai")return;
     canceled.current=false;
-    try{media.current=await navigator.mediaDevices.getUserMedia({audio:true});if(!alive.current){media.current.getTracks().forEach(t=>t.stop());return;}const r=new MediaRecorder(media.current);recorder.current=r;const chunks:BlobPart[]=[];r.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};r.onstop=async()=>{if(timer.current)clearTimeout(timer.current);media.current?.getTracks().forEach(t=>t.stop());if(canceled.current||!alive.current)return;setListening(false);setPending(true);try{const form=new FormData();form.set("audio",new Blob(chunks,{type:r.mimeType}),`response.${r.mimeType.includes("mp4")?"mp4":"webm"}`);const result=await(await request(form)).json();if(alive.current)confirmed(result.voiceId,result.transcript);}catch{if(alive.current){setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced recognition is unavailable. Retry with browser speech or type; your session is saved.");}}finally{if(alive.current)setPending(false);}};r.start();setListening(true);timer.current=setTimeout(()=>{if(r.state==="recording")r.stop();},45000);}catch{media.current?.getTracks().forEach(t=>t.stop());setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced recording is unavailable. Retry with browser speech or type.");}
+    try{media.current=await navigator.mediaDevices.getUserMedia({audio:true});if(!alive.current||canceled.current||document.hidden){media.current.getTracks().forEach(t=>t.stop());return;}const r=new MediaRecorder(media.current);recorder.current=r;const chunks:BlobPart[]=[];r.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};r.onstop=async()=>{if(timer.current)clearTimeout(timer.current);media.current?.getTracks().forEach(t=>t.stop());if(canceled.current||!alive.current)return;setListening(false);setPending(true);try{const form=new FormData();form.set("audio",new Blob(chunks,{type:r.mimeType}),`response.${r.mimeType.includes("mp4")?"mp4":"webm"}`);const result=await(await request(form)).json();if(alive.current)confirmed(result.voiceId,result.transcript);}catch{if(alive.current){setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced recognition is unavailable. Retry with browser speech or type; your session is saved.");}}finally{if(alive.current)setPending(false);}};r.start();setListening(true);timer.current=setTimeout(()=>{if(r.state==="recording")r.stop();},45000);}catch{media.current?.getTracks().forEach(t=>t.stop());setFailed(f=>({...f,enhanced:true}));setMessage("Enhanced recording is unavailable. Retry with browser speech or type.");}
   }
   function cancel(){canceled.current=true;recognition.current?.cancel();if(timer.current)clearTimeout(timer.current);if(recorder.current?.state==="recording")recorder.current.stop();media.current?.getTracks().forEach(t=>t.stop());setListening(false);setDraft("");setFinal(false);}
   async function confirm(){setPending(true);try{const value=await(await request({action:"browser_voice",attemptId:attempt.current,text:draft})).json();confirmed(value.voiceId,value.transcript);setDraft("");setFinal(false);}catch{setMessage("Could not save the transcript. Retry confirmation or type instead.");}finally{if(alive.current)setPending(false);}}
-  return <div className="support" data-voice-state={capabilityState(cap)}>
+  return <div className="support" data-voice-active={listening||playing||pending} data-voice-state={capabilityState(cap)}>
     <p>{t("ui.119")}{cap.stt?t("ui.120"):t("ui.121")} {cap.microphone==="denied"?t("ui.122"):""}</p>
     <p className="muted">{t("ui.123")}</p>
     {speechText&&<><button disabled={pending||listening} onClick={play}>{t("ui.124")}</button><button disabled={!playing} onClick={stop}>{t("ui.125")}</button></>}

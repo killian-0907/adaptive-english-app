@@ -37,3 +37,12 @@ export async function signOutAction() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+export async function resendConfirmation(form: FormData) {
+  const email=String(form.get("email")??"").trim();
+  if(email.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    const db=await createServerUserSupabaseClient();
+    await db.auth.resend({type:"signup",email,options:{emailRedirectTo:`${siteOrigin()}/auth/confirm`}});
+  }
+  redirect("/login?message=check_email");
+}
