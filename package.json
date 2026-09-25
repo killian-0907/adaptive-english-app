@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright install chromium && playwright test",
+    "test:providers:live": "next build && playwright test --config playwright.live.config.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
@@ -27,6 +28,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1",
+    "undici": "7.30.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

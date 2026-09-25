@@ -36,6 +36,10 @@ Provider contracts live under `src/domain/voice`; production adapters are server
 
 Optional server-only overrides: `OPENAI_TTS_MODEL`, `OPENAI_STT_MODEL`, `OPENAI_ASSESSMENT_MODEL`. `OPENAI_API_KEY` must be supplied to the server. Missing credentials produce an honest retry/skip error; no fake production responses exist.
 
+For networks requiring an HTTP CONNECT proxy, set the server-only `OPENAI_HTTPS_PROXY` to the approved proxy URL. The adapter uses a scoped, reused Undici 7 dispatcher; it does not change global network settings. Transport failures return a sanitized retry/fallback error without exposing credentials or upstream bodies.
+
+Run `corepack pnpm test:providers:live` explicitly for paid verification. It builds and starts the production server on port 3100, creates a temporary local Supabase user, then checks real TTS, cached playback, multipart STT, structured evaluation, persisted evidence, submission deduplication and completion. It uses no provider doubles and removes its user and cached prompt audio afterward. Traces, screenshots and videos are disabled. A funded API project and running local Supabase are required.
+
 Official API references: [speech generation](https://developers.openai.com/api/docs/guides/text-to-speech), [transcription](https://developers.openai.com/api/docs/guides/speech-to-text), [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
 
 Turn-based playback → recording → transcription → evaluation → next task. Microphone permission, retry, optional transcript reveal, another attempt, typing and skip are supported. Recording stops at 45 seconds; server file limit is 8 MB. Raw learner recordings exist only in browser/server request memory and are never stored. Successful STT receipts are resumable. Generated prompt audio is cached in the private voice bucket (it contains no learner recording). Usage records are deduplicated per request or cached evaluation.
@@ -62,3 +66,14 @@ Out of scope: Phase 9 teaching/normal lessons, final dashboard, billing/ads inte
 - `corepack pnpm build`: passed, all nine pages generated; assessment/API routes remain dynamic.
 - Mobile onboarding/results screenshots inspected for clipping and horizontal overflow.
 - No OpenAI credential was present in process/user/machine environment or project env configuration. Live paid TTS/STT/evaluator calls remain unverified; adapter tests use test-only doubles. No production fake provider is installed.
+
+## Provider verification follow-up, 2026-09-25
+
+- The locally supplied API key authenticated successfully (`/v1/models`: HTTP 200). Its value was never logged.
+- Direct outbound calls timed out on this machine. The configured local proxy restored connectivity; the server now supports an explicit scoped proxy and sanitizes transport failures.
+- The production-build live test reached OpenAI TTS, which rejected the request with HTTP 429, `insufficient_quota` / `credit_balance_exhausted`.
+- Independent real calls through the production STT and evaluator adapters returned the same HTTP 429 quota rejection. The STT diagnostic used valid silent PCM solely to diagnose transport; it is not successful speech recognition verification.
+- Successful real TTS/STT/evaluation and the full live workflow remain blocked until the API project has available credits. No synthetic success or production fake provider was introduced. This follow-up must not be treated as passed live verification.
+- Final local checks after the transport fix: `typecheck` passed; `lint` passed with zero errors and the existing PostCSS export warning; `test` passed 28 tests across four files; `db:test` passed 41 tests across three files; `test:e2e` passed both Chromium flows; `build` passed with all nine pages generated. The targeted provider test file also passed all seven tests before the full suite.
+- Phase 8 completion proceeds with the full local verification suite; the quota rejection is an external provider limitation, not a Phase 8 code failure. The production implementations, provider abstractions, contract tests and test doubles remain intact. No paid service or credit purchase is required for this completion. Phase 9 has not begun.
+- Live OpenAI TTS, STT, and open-ended evaluator verification is deferred because the API account has no available credits. Provider code exists and contract/integration behavior is covered by local tests. None of the three live provider calls is recorded as passed.

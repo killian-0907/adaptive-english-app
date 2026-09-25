@@ -1,14 +1,32 @@
 import "server-only";
 import { z } from "zod";
+import { ProxyAgent } from "undici";
 import { evaluationSchema } from "@/domain/assessment/contracts";
 import type { Item } from "@/domain/assessment/items";
 import type { AssessmentEvaluator, VoiceProvider } from "@/domain/voice/contracts";
 
 export class ProviderUnavailable extends Error {}
+let proxy: { url: string; agent: ProxyAgent } | undefined;
+function providerProxy() {
+  const url = process.env.OPENAI_HTTPS_PROXY;
+  if (!url) return undefined;
+  if (proxy?.url !== url) {
+    if (proxy) void proxy.agent.close();
+    proxy = { url, agent: new ProxyAgent(url) };
+  }
+  return proxy.agent;
+}
 async function request(path: string, body: BodyInit, json = true) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new ProviderUnavailable("Voice and open-response evaluation are temporarily unavailable. Retry later or skip this item; untested skills stay uncertain.");
-  const response = await fetch(`https://api.openai.com/v1/${path}`, { method: "POST", headers: { Authorization: `Bearer ${key}`, ...(json ? { "Content-Type": "application/json" } : {}) }, body, signal: AbortSignal.timeout(45000) });
+  let response: Response;
+  try {
+    const options: RequestInit & { dispatcher?: ProxyAgent } = { method: "POST", headers: { Authorization: `Bearer ${key}`, ...(json ? { "Content-Type": "application/json" } : {}) }, body, signal: AbortSignal.timeout(45000), dispatcher: providerProxy() };
+    response = await fetch(`https://api.openai.com/v1/${path}`, options);
+  } catch {
+    // Do not expose fetch errors, proxy URLs, headers or upstream bodies to the client.
+    throw new ProviderUnavailable("The language service could not be reached. Please retry or use the fallback.");
+  }
   if (!response.ok) throw new ProviderUnavailable("The language service could not complete this attempt. Please retry or use the fallback.");
   return response;
 }
