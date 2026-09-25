@@ -25,6 +25,7 @@ test("A: assessed learner completes deterministic practice, updates model and re
     const changes=await f.db.from("learner_model_changes").select("id").eq("user_id",f.user.id).eq("model_version","learning-v1");expect(changes.data?.length).toBeGreaterThanOrEqual(2);
     const decisions=await f.db.from("teaching_decisions").select("id").eq("user_id",f.user.id);expect(decisions.data).toHaveLength(2);
     const replay=await post(page,{action:"answer",activityId:before.activityId,text:"Water, please.",voiceId:null,skip:false,elapsedMs:1000});expect(replay.ok()).toBe(true);expect((await f.db.from("evidence_events").select("id").eq("activity_id",before.activityId)).data).toHaveLength(1);
+    const telemetry=await f.db.from("operational_events").select("properties").eq("activity_id",before.activityId).eq("event_name","adaptive_quality_activity");expect(telemetry.error).toBeNull();expect(telemetry.data).toHaveLength(1);expect(JSON.stringify(telemetry.data)).not.toContain("Water, please.");expect(telemetry.data?.[0].properties).toMatchObject({kind:"activity",support:0,quality:4,typedFallback:false});
     const forged=await post(page,{action:"answer",activityId:after.activityId,text:"Hello",voiceId:null,skip:false,elapsedMs:null,user_id:f.user.id,quality:4});expect(forged.status()).toBe(400);
     const csrf=await page.request.post("/api/learning",{headers:{origin:"https://wrong.example"},data:{action:"start"}});expect(csrf.status()).toBe(403);
     // Test-only unavailable-service response exercises the visible fallback without paid calls.

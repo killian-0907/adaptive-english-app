@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { decide, makeTask, classifyDifficulty, correctionText, supportText } from "./engine";
-import { processEvidence, reviewNeed } from "./processor";
+import { processEvidence, reviewNeed, calibratedConfidence } from "./processor";
+import { learningEvidence } from "./evidence";
+import { scenarioTask, scenarios } from "./scenarios";
 import { scoreLearning } from "./evaluation";
 import { commandSchema, type Evidence, type History, type Snapshot } from "./types";
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
@@ -46,7 +48,7 @@ describe("adaptive teaching",()=>{
   it("does not obsess over the weakest skill or a single topic",()=>{const h=[1,2,3].map(n=>history(n,2));const d=decide(snapshot({history:h,abilities:[{dimension:"spoken_expression",estimate_level:0,confidence_level:2}]}));expect(d.topic).not.toBe(h[0].metadata.decision.topic);});
   it("requires a pattern for difficulty changes",()=>{expect(classifyDifficulty(snapshot({history:[history(1,0)]}))).toBe("somewhat_difficult");expect(classifyDifficulty(snapshot({history:[history(1,0),history(2,0)]}))).toBe("too_difficult");expect(classifyDifficulty(snapshot({history:[history(1),history(2)]}))).toBe("too_easy");});
   it("intervenes immediately when instructions are incomprehensible",()=>{const h=history(1,null,{feedback:"cannot_understand"});h.status="interrupted";expect(decide(snapshot({history:[h]})).difficultyState).toBe("impossible_to_follow");});
-  it("increases exposure with repeated independent comprehension",()=>{const low=decide(snapshot());const high=decide(snapshot({evidence:[1,2,3,4].map(n=>event(n))}));expect(high.exposure).toBeGreaterThan(low.exposure);});
+  it("increases exposure with repeated independent comprehension",()=>{const low=decide(snapshot());const high=decide(snapshot({evidence:[1,2,3,4].map(n=>event(n,{target_skill:"listening",modality:"listening_recognition"}))}));expect(high.exposure).toBeGreaterThan(low.exposure);});
   it("temporarily restores native support under overload",()=>{const s=snapshot({abilities:[{dimension:"listening",estimate_level:3,confidence_level:2}]});expect(decide({...s,state:"overloaded"}).exposure).toBeLessThan(decide(s).exposure);});
   it("respects explicit method rejection while preserving the objective",()=>{const h=history(1,null,{feedback:"reject_method"});h.status="interrupted";const d=decide(snapshot({history:[h]}));expect(d.objective).toBe(h.metadata.decision.objective);expect(d.method).not.toBe(h.metadata.decision.method);});
   it("promising effectiveness does not redefine a disliked method as liked",()=>{const d=decide(snapshot({preferences:[{preference_type:"method",target_key:"vocabulary_context",strength:-2,value_text:null}],effects:[{teaching_method:"vocabulary_context",target_skill:"vocabulary",effectiveness_state:"repeatedly_helpful",confidence_level:2,evidence_count:3}]}));expect(d.method).not.toBe("vocabulary_context");});
@@ -62,4 +64,45 @@ describe("adaptive teaching",()=>{
   it("cross-session review uses old evidence but does not carry tired state",()=>{const h=history(1,0);h.session_id=id(99);expect(classifyDifficulty(snapshot({history:[h]}))).toBe("comfortable");expect(decide(snapshot({history:[h]})).support.initial).toBe(0);});
   it("does not remove replay from advanced listening",()=>{expect(decide(snapshot({abilities:[{dimension:"listening",estimate_level:5,confidence_level:3}]})).listening).toMatchObject({replay:true,transcript:false,speed:1});});
   it("always rejects forged client identity, evidence and difficulty",()=>{expect(commandSchema.safeParse({action:"answer",activityId:id(1),text:"hello",voiceId:null,skip:false,elapsedMs:null,user_id:id(2),evidence:[],difficulty:5}).success).toBe(false);});
+});
+
+
+describe("Phase 16 calibration regressions",()=>{
+  it("identical tasks with different activity IDs/difficulty labels do not create mastery",()=>{
+    const events=Array.from({length:8},(_,i)=>{const e=event(i+1);e.metadata.taskKey="polite_requests:review:"+i+":0";e.transfer_success=true;return e;});
+    const result=processEvidence(snapshot({evidence:events.slice(0,-1)}),events.slice(-1),now);
+    expect(result.patches.find(p=>p.kind==="ability")?.values).toMatchObject({estimate_level:0,confidence_level:1});
+    expect(result.patches.find(p=>p.kind==="knowledge")?.values.state).toBe("emerging");
+  });
+  it("conflicting evidence reduces previously high confidence without collapsing level",()=>{
+    const events=[1,2,3,4].map(n=>event(n,{response_quality:n%2?0:4}));
+    expect(ability(snapshot({abilities:[{dimension:"vocabulary",estimate_level:3,confidence_level:3}],evidence:events.slice(0,-1)}),events.slice(-1))).toMatchObject({estimate_level:3,confidence_level:1});
+  });
+  it("stale evidence is not current confidence",()=>{expect(calibratedConfidence([1,2,3,4,5,6].map(n=>event(n,{transfer_success:true})),new Date("2027-09-25"))).toBe(0);});
+  it("two independent recoveries release sticky review urgency",()=>{
+    const s=snapshot({knowledge:[{knowledge_item_id:id(2),modality:"reading_recognition",state:"recognized",confidence_level:2,review_need:3,last_evidence_at:now.toISOString()}],evidence:[event(1)]});
+    expect(processEvidence(s,[event(2)],now).patches.find(p=>p.kind==="knowledge")?.values.review_need).toBe(0);
+  });
+  it("reading recognition cannot raise listening exposure",()=>{expect(decide(snapshot({evidence:[1,2,3,4].map(n=>event(n))}),now).exposure).toBe(decide(snapshot(),now).exposure);});
+  it("previous session feedback does not leak into the next session",()=>{const h=history(1,null,{feedback:"cannot_understand"});h.session_id=id(99);expect(decide(snapshot({history:[h]}),now).difficultyState).toBe("comfortable");});
+  it("alternating answers do not cause easy/hard oscillation",()=>{const s=snapshot({history:[history(1,4),history(2,0),history(3,4)]});expect(decide(s,now).difficulty).toBe(0);});
+  it("listening is selected after a window of reading drills",()=>{const s=snapshot({history:[1,2,3,4,5,6].map(n=>history(n,2))});expect(decide(s,now).method).toBe("listening");});
+  it("breadth does not override an explicit listening rejection",()=>{const s=snapshot({history:[1,2,3,4,5,6].map(n=>history(n,2)),preferences:[{preference_type:"method",target_key:"listening",strength:-2,value_text:null}]});expect(decide(s,now).method).not.toBe("listening");});
+  it("fatigue never changes stable estimates over repeated failed activities",()=>{const events=Array.from({length:20},(_,i)=>{const e=event(i,{response_quality:0});e.metadata.sessionState="tired";return e;});expect(processEvidence(snapshot({abilities:[{dimension:"vocabulary",estimate_level:4,confidence_level:2}]}),events,now).patches).toEqual([]);});
+});
+
+
+describe("content calibration",()=>{
+  it("accepts a useful phrase in communication but requires target order in formal practice",()=>{
+    const decision={...decide(snapshot()),method:"speaking" as const};const task=scenarioTask(scenarios.find(s=>s.key==="restaurant")!,0,decision,"test");
+    expect(scoreLearning(task,task.model,null,true,false,0,false).quality).toBe(3);
+    const formal=makeTask({...decision,method:"sentence_building",topic:"past_events",difficulty:2},0);
+    expect(scoreLearning(formal,formal.model.split(" ").reverse().join(" "),null,false,false,0,false).quality).toBeLessThan(2);
+  });
+  it("a basic phrase cannot establish advanced ability through a difficulty label",()=>{
+    const decision={...decide(snapshot()),method:"speaking" as const,difficulty:5};const task=scenarioTask(scenarios[0],0,decision,"test");
+    const scored=scoreLearning(task,task.model,null,true,false,0,false);
+    const e=learningEvidence({snapshot:snapshot(),task,decision,scored,id:id(31),activityId:id(32),knowledgeId:id(2),now:now.toISOString(),browserVoice:false,voice:true,replay:1,transcript:false,retries:0,elapsedMs:1000,skip:false,evaluationStrategy:"LOCAL_BOUNDED"});
+    expect(e.metadata.difficulty).toBe(1);
+  });
 });

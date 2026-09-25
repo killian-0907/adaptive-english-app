@@ -1,4 +1,5 @@
 import "server-only";
+import { recordQuality } from "./quality";
 import { withAllowance } from "./allowances";
 import { requestSlot } from "./lifecycle";
 import { voiceDelivery, requireVoiceDelivery } from "./delivery";
@@ -8,11 +9,11 @@ import { evaluationSchema } from "@/domain/assessment/contracts";
 import type { Item } from "@/domain/assessment/items";
 import { decide, correctionText, supportText } from "@/domain/learning/engine";
 import { planContent } from "@/domain/learning/scenarios";
-import { transferResult } from "@/domain/learning/transfer";
+import { learningEvidence } from "@/domain/learning/evidence";
 import { resolveEvaluation } from "@/domain/learning/bounded";
 import { processEvidence } from "@/domain/learning/processor";
 import { responseTarget, scoreLearning } from "@/domain/learning/evaluation";
-import { evidenceSchema, type Command, type Decision, type Evidence, type History, type Snapshot, type Task } from "@/domain/learning/types";
+import { evidenceSchema, type Command, type Decision, type History, type Snapshot, type Task } from "@/domain/learning/types";
 import type { Json } from "@/types/database.generated";
 import { OpenAIAssessmentProvider, ProviderUnavailable } from "./assessment-provider";
 import { assessmentVoice } from "./assessment-voice";
@@ -91,15 +92,19 @@ async function answer(userId:string,command:Extract<Command,{action:"answer"}>){
       }catch(error){if(!(error instanceof ProviderUnavailable))throw error;evaluationStrategy="FALLBACK";}
     }
     const scored=scoreLearning(task,text,evaluation,voice,m.transcript??false,m.support??0,command.skip);
-    const {quality,errors,support,skill,modality}=scored;const confidence=browserVoice?Math.min(1,scored.confidence):scored.confidence;
+    const {quality,errors,support}=scored;
     const correction=correctionText(decision,task,quality,errors,support);
     const attempts=checked(await db.from("voice_interactions").select("id").eq("user_id",userId).eq("activity_id",activity.id).eq("interaction_type","stt"));
     // Never infer speaking ability from typed fallback or listening from revealed text.
     const id=randomUUID();const now=new Date().toISOString();
     for(let retry=0;retry<4;retry++){
       const s=await snapshot(userId,activity.session_id);
-      const event:Evidence=evidenceSchema.parse({id,session_id:activity.session_id,activity_id:activity.id,target_skill:quality===null?null:skill,knowledge_item_id:activity.target_knowledge_item_id,modality,source:evaluationStrategy==="AI_STRUCTURED"?"evaluator":"deterministic",evidence_kind:"learning_performance",result:quality===null?"neutral":quality>=3?"success":quality>=2?"partial":"failure",response_quality:quality,support_level:support,evaluator_confidence_level:confidence,transfer_success:transferResult(s,task,decision,quality,support,confidence,browserVoice,Math.max(0,attempts.length-1)),voice_uncertainty:browserVoice,response_time_ms:command.elapsedMs,dedupe_key:`${activity.id}:learning:performance`,occurred_at:now,processor_status:"pending",metadata:{difficulty:decision.difficulty,method:decision.method,topic:task.topic,taskKey:task.key,errors,sessionState:s.state,misunderstood:errors.includes("task_misunderstanding"),firstListen:task.modality==="listening_recognition"&&m.replay===1&&!m.transcript,retries:Math.max(0,attempts.length-1),timed:false,skipped:command.skip,evaluationStrategy,voiceProvider:browserVoice?"browser_native":voice?"openai":"typed",acousticUncertainty:browserVoice,scenarioFamily:task.scenario?.family}});
-      const processed=processEvidence(s,[event]);const committed=checked(await db.rpc("commit_learning_response",{p_user:userId,p_activity:activity.id,p_token:token,p_revision:s.revision,p_response:json({...command,text,quality,correction,support}),p_events:json([event]),p_patches:json(processed.patches),p_applied:processed.applied}));if(committed)return;
+      const event=learningEvidence({snapshot:s,task,decision,scored,id,activityId:activity.id,knowledgeId:activity.target_knowledge_item_id,now,browserVoice,voice,replay:m.replay??0,transcript:m.transcript??false,retries:Math.max(0,attempts.length-1),elapsedMs:command.elapsedMs,skip:command.skip,evaluationStrategy});
+      const processed=processEvidence(s,[event]);const committed=checked(await db.rpc("commit_learning_response",{p_user:userId,p_activity:activity.id,p_token:token,p_revision:s.revision,p_response:json({...command,text,quality,correction,support}),p_events:json([event]),p_patches:json(processed.patches),p_applied:processed.applied}));if(committed){
+        const previous=s.history.filter(h=>h.status==="completed").at(-1);
+        await recordQuality(userId,activity.session_id,activity.id,{kind:"activity",quality,support,exposure:decision.exposure,difficulty:decision.difficulty,struggle:["too_difficult","impossible_to_follow"].includes(decision.difficultyState),easy:decision.difficultyState==="too_easy",typedFallback:task.spoken&&!voice,replay:Math.min(20,m.replay??0),transfer:event.transfer_success,skipped:command.skip,methodChanged:!!previous&&previous.metadata.decision.method!==decision.method,scenarioRepeated:!!task.scenario&&previous?.metadata.task.scenario?.family===task.scenario.family,estimateChanged:processed.patches.some(p=>p.kind==="ability"&&p.values.estimate_level!==s.abilities.find(a=>a.dimension===p.key)?.estimate_level)});
+        return;
+      }
     }
     throw new LearningError("Another tab changed your state. Please retry your saved response.");
   }finally{await db.rpc("cache_assessment_evaluation",{p_user:userId,p_activity:activity.id,p_token:token,p_hash:null,p_evaluation:null});}
@@ -109,8 +114,8 @@ export async function learningCommand(userId:string,command:Command){
   if(command.action==="start")checked(await db.rpc("start_learning",{p_user:userId}));
   else if(command.action==="browser_voice"){await requireVoiceDelivery(userId);const voiceId=checked(await db.rpc("record_browser_transcript",{p_user:userId,p_activity:command.activityId,p_attempt:command.attemptId,p_text:command.text}));return {voiceId,transcript:command.text};}
   else if(command.action==="answer")await answer(userId,command);
-  else if(command.action==="end"){checked(await db.rpc("end_learning",{p_user:userId,p_session:command.sessionId}).then(r=>({...r,data:true})));return learningView(userId,command.sessionId);}
-  else if(command.action==="support"||command.action==="feedback")checked(await db.rpc("control_learning",{p_user:userId,p_activity:command.activityId,p_action:command.action,p_value:command.kind}).then(r=>({...r,data:true})));
+  else if(command.action==="end"){checked(await db.rpc("end_learning",{p_user:userId,p_session:command.sessionId}).then(r=>({...r,data:true})));await recordQuality(userId,command.sessionId,null,{kind:"session_completed"});return learningView(userId,command.sessionId);}
+  else if(command.action==="support"||command.action==="feedback"){checked(await db.rpc("control_learning",{p_user:userId,p_activity:command.activityId,p_action:command.action,p_value:command.kind}).then(r=>({...r,data:true})));const activity=await owned(userId,command.activityId);await recordQuality(userId,activity.session_id,activity.id,command.action==="support"?{kind:"support",value:command.kind}:{kind:"feedback",value:command.kind,support:(activity.metadata as unknown as History["metadata"]).support??0,quality:(activity.metadata as unknown as History["metadata"]).quality??null});}
   return learningView(userId);
 }
 

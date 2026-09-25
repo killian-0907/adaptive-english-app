@@ -7,7 +7,7 @@ Object.assign(objectives,{introduce:"Introduce yourself",confirm:"Confirm useful
 const clamp = (n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 export function classifyDifficulty(s: Snapshot) {
   const recent = s.history.filter(h=>h.session_id===s.sessionId && h.status==="completed" && h.metadata.quality!==null).slice(-3);
-  const feedback=s.history.at(-1)?.metadata.feedback;
+  const feedback=s.history.at(-1)?.session_id===s.sessionId?s.history.at(-1)?.metadata.feedback:undefined;
   if(feedback==="cannot_understand") return "impossible_to_follow";
   if(feedback==="too_difficult" || s.state==="overloaded") return "too_difficult";
   if(recent.length>=2 && recent.slice(-2).every(h=>(h.metadata.quality??0)<=1)) return "too_difficult";
@@ -17,7 +17,7 @@ export function classifyDifficulty(s: Snapshot) {
 }
 export function decide(s: Snapshot, now=new Date()): Decision {
   const history=s.history; const current=history.filter(h=>h.session_id===s.sessionId); const last=history.at(-1); const previous=last?.metadata.decision;
-  const feedback=last?.metadata.feedback; const interrupted=last?.status==="interrupted" && last.session_id===s.sessionId;
+  const feedback=last?.session_id===s.sessionId?last?.metadata.feedback:undefined; const interrupted=last?.status==="interrupted" && last.session_id===s.sessionId;
   const states=["tired","frustrated","overloaded","increased_support_need"];
   const difficultyState=classifyDifficulty(s);
   const due=s.knowledge.map(k=>({...k,need:Math.max(reviewNeed(k.state,k.last_evidence_at,k.review_need,now),k.modality.endsWith("recognition")&&["recognized","strong"].includes(k.state)&&!s.knowledge.some(p=>p.knowledge_item_id===k.knowledge_item_id&&p.modality.endsWith("production")&&["independent","strong"].includes(p.state))?2:0)})).filter(k=>k.need>=2).sort((a,b)=>b.need-a.need);
@@ -25,7 +25,7 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   const repeated=s.patterns.filter(p=>p.confidence_level>=1&&p.status!=="improving"&&p.severity_level>=1).sort((a,b)=>b.severity_level-a.severity_level);
   let topic=topics[0] as string; let purpose: Decision["purpose"]="communication"; const reasons:string[]=[];
   const recentTopics=history.slice(-3).map(h=>h.metadata.decision.topic);
-  const focusRun=current.slice(-2).filter(h=>["weakness_repair","consolidation","review"].includes(h.metadata.decision.purpose));
+  const focusRun=history.slice(-2).filter(h=>["weakness_repair","consolidation","review"].includes(h.metadata.decision.purpose));
   if(interrupted && previous){topic=previous.topic;purpose=previous.purpose;reasons.push("preserve_objective_after_feedback");}
   else if(focusRun.length>=2 && previous){topic=previous.topic;purpose="transfer";reasons.push("return_to_real_use_after_brief_focus");}
   else if(states.includes(s.state)){topic=previous?.topic??topics[0];purpose="consolidation";reasons.push("temporary_session_support");}
@@ -37,32 +37,39 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   if(!objectives[topic]) topic="polite_requests";
   const candidates: Method[]=purpose==="review"?(due[0]?.modality.endsWith("recognition")?["sentence_building","speaking","review"]:["review","sentence_building","listening"]):purpose==="weakness_repair"?["sentence_building","grammar_explanation","vocabulary_context","speaking"]:purpose==="transfer"?["transfer","role_play","guided_writing"]:purpose==="consolidation"?["vocabulary_context","sentence_building","review"]:["vocabulary_context","conversation","role_play","listening","speaking","guided_writing"];
   const preferenceKey: Record<Method,string>={conversation:"conversation",role_play:"conversation",listening:"listening",speaking:"conversation",sentence_building:"writing",vocabulary_context:"examples",grammar_explanation:"examples",guided_writing:"writing",review:"repetition",transfer:"conversation"};
-  const rejected=s.preferences.filter(p=>p.preference_type==="method"&&p.strength<=-2&&history.slice(-3).some(h=>h.metadata.decision.method===p.target_key)).map(p=>p.target_key);
+  const rejected=s.preferences.filter(p=>p.preference_type==="method"&&p.strength<=-2).map(p=>p.target_key);
   const score=(m:Method)=>{
     const pref=s.preferences.filter(p=>p.preference_type==="method" && (p.target_key===m||p.target_key===preferenceKey[m])).reduce((sum,p)=>sum+p.strength,0);
     const methodSkill=m==="listening"?"listening":["speaking","conversation","role_play","transfer"].includes(m)?"spoken_expression":["sentence_building","guided_writing"].includes(m)?"written_expression":"vocabulary";
     const effect=s.effects.find(e=>e.teaching_method===m&&e.target_skill===methodSkill);
     const weakness=s.abilities.find(a=>a.dimension===methodSkill&&a.confidence_level>=2&&a.estimate_level<=1);
-    return pref*2+(effect?.effectiveness_state==="repeatedly_helpful"?2:effect?.effectiveness_state==="promising"?1:0)+(weakness?2:0)+(s.state==="highly_engaged"&&["conversation","role_play"].includes(m)?1:0) -(history.slice(-2).filter(h=>h.metadata.decision.method===m).length*2)+(feedback==="more_speaking"&&["speaking","role_play"].includes(m)?12:0) -(states.includes(s.state)&&["conversation","role_play"].includes(m)?3:0);
+    return Math.max(-4,Math.min(3,pref*1.5))+(effect?.effectiveness_state==="repeatedly_helpful"?2:effect?.effectiveness_state==="promising"?1:0)+(weakness?2:0)+(s.state==="highly_engaged"&&["conversation","role_play"].includes(m)?1:0) -(history.slice(-2).filter(h=>h.metadata.decision.method===m).length*2)+(feedback==="more_speaking"&&["speaking","role_play"].includes(m)?12:0) -(states.includes(s.state)&&["conversation","role_play"].includes(m)?3:0);
   };
   let available=candidates.filter(m=>!(interrupted && feedback==="reject_method" && m===previous?.method) && !rejected.includes(m));
   if(feedback==="provider_fallback") available=["sentence_building","vocabulary_context","review"].filter(m=>m!==previous?.method) as Method[];
   if(feedback==="more_speaking") available=["speaking","role_play"];
   if(!available.length) available=(["sentence_building","vocabulary_context","guided_writing"] as Method[]).filter(m=>m!==previous?.method);
-  const method=[...available].sort((a,b)=>score(b)-score(a))[0];
+  let method=[...available].sort((a,b)=>score(b)-score(a))[0];
+  const breadth=history.filter(h=>h.status==="completed").slice(-8);
+  const explicitReject=(m:string)=>s.preferences.some(p=>p.preference_type==="method"&&p.target_key===m&&p.strength<=-2);
+  if(!interrupted&&!states.includes(s.state)&&feedback!=="provider_fallback"){
+    if(breadth.length>=6&&!breadth.some(h=>h.metadata.task.modality==="listening_recognition")&&!explicitReject("listening")){method="listening";reasons.push("listening_breadth_due");}
+    else if(breadth.length>=6&&!breadth.some(h=>h.metadata.task.spoken)&&!explicitReject("speaking")){method="speaking";reasons.push("spoken_retrieval_breadth_due");}
+    else if(breadth.length>=8&&!breadth.some(h=>h.metadata.task.modality==="written_production")&&!explicitReject("guided_writing")){method="guided_writing";reasons.push("written_breadth_due");}
+  }
   reasons.push(s.effects.some(e=>e.teaching_method===method&&e.confidence_level>0)?"preference_and_observed_association":"need_preference_and_recent_format");
   const targetSkill:Dimension=interrupted&&previous?previous.targetSkill:method==="listening"?"listening":["speaking","conversation","role_play","transfer"].includes(method)?"spoken_expression":method==="vocabulary_context"||method==="review"?"vocabulary":topic==="past_events"?"grammar":"written_expression";
   const ability=s.abilities.find(a=>a.dimension===targetSkill); let difficulty=interrupted&&previous?previous.difficulty:Math.min(4,ability?.estimate_level??0);
   if(previous && current.length && previous.targetSkill===targetSkill) difficulty=previous.difficulty;
-  if(["too_difficult","impossible_to_follow"].includes(difficultyState)) difficulty--;
-  else if(difficultyState==="too_easy"&&!states.includes(s.state)) difficulty++;
+  if(["too_difficult","impossible_to_follow"].includes(difficultyState)&&(feedback==="too_difficult"||feedback==="cannot_understand"||s.state==="overloaded"||current.slice(-2).every(h=>h.metadata.task.skill===targetSkill))) difficulty--;
+  else if(difficultyState==="too_easy"&&!states.includes(s.state)&&current.slice(-2).length===2&&current.slice(-2).every(h=>h.metadata.task.skill===targetSkill&&h.metadata.decision.difficulty===difficulty)) {difficulty++;reasons.push("comparable_success_trend");}
   else if(s.state==="bored" && current.length>=2) difficulty++;
   if(states.includes(s.state)) difficulty=Math.min(difficulty,previous?.difficulty??difficulty);
   const pace=s.preferences.find(p=>p.preference_type==="pace")?.value_text;
   if(pace==="gentle")difficulty=Math.min(difficulty,Math.max(0,(ability?.estimate_level??0)-1));
   if(pace==="brisk"&&(ability?.confidence_level??0)>=2&&["comfortable","too_easy"].includes(difficultyState)&&!states.includes(s.state))difficulty=Math.max(difficulty,Math.min(5,(ability?.estimate_level??0)+1));
   difficulty=clamp(difficulty,0,5);
-  const independent=s.evidence.slice(-6).filter(e=>e.response_quality!==null&&e.response_quality>=3&&e.support_level===0&&!e.metadata.misunderstood);
+  const independent=s.evidence.slice(-8).filter(e=>e.response_quality!==null&&e.response_quality>=3&&e.support_level===0&&!e.metadata.misunderstood&&!e.voice_uncertainty&&e.evaluator_confidence_level>=2&&e.modality==="listening_recognition"&&now.getTime()-Date.parse(e.occurred_at)<=60*86400000);
   const listening=s.abilities.find(a=>a.dimension==="listening");
   let exposure=clamp((listening&&listening.confidence_level>0?listening.estimate_level:0)+1,1,5);
   if(listening?.last_evidence_at && now.getTime()-Date.parse(listening.last_evidence_at)>60*86400000) exposure=Math.max(1,exposure-1);

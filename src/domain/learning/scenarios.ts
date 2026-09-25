@@ -66,7 +66,7 @@ export function planContent(s: Snapshot, decision: Decision): {decision:Decision
   const practical=["conversation","role_play","speaking","listening","transfer","guided_writing"].includes(d.method);
   let scenario:Scenario|undefined;let index=0;let run=`${s.sessionId}:${current.length}`;
   // A short successful exchange can continue; explicit feedback and overload return control to the engine.
-  if(progress && last?.status==="completed" && s.state==="normal" && (last.metadata.quality??0)>=3 && progress.turn+1<progress.total){
+  if(!d.reasons.some(r=>r.endsWith("breadth_due")) && progress && last?.status==="completed" && s.state==="normal" && (last.metadata.quality??0)>=3 && progress.turn+1<progress.total){
     scenario=scenarios.find(x=>x.key===progress.family);index=progress.turn+1;run=progress.run;
     d={...d,method:last.metadata.decision.method};d.reasons.push("continue_successful_bounded_exchange");
   } else if(progress && last?.status==="completed" && last.metadata.quality===null && !s.evidence.some(e=>e.activity_id===last.id&&e.metadata.skipped) && current.filter(h=>h.metadata.task.scenario?.run===progress.run && h.metadata.task.scenario.turn===progress.turn).length<2){
@@ -85,7 +85,13 @@ export function planContent(s: Snapshot, decision: Decision): {decision:Decision
   const fn=d.difficulty>=3&&index===1&&repairTurns[scenario.key]?"repair":scenario.turns[index].function;
   // Keep the reusable function as the knowledge key across different scenarios.
   d={...d,topic:fn,objective:fn===d.topic?d.objective:`${scenario.title}: ${fn.replaceAll("_"," ")}`,scenario:scenario.key,listening:{...d.listening,transcript:false}};
-  if(d.speaking.frame&&d.method!=="listening")d.support={...d.support,initial:Math.max(4,d.support.initial)};
+  if(d.speaking.frame&&d.method!=="listening"){
+    const recent=s.history.filter(h=>h.status==="completed"&&h.metadata.task.spoken&&h.metadata.quality!==null).slice(-12);
+    const successes=recent.filter(h=>(h.metadata.quality??0)>=3).length;
+    const scaffold=Math.max(0,4-Math.floor(successes/2));
+    d.support={...d.support,initial:Math.max(scaffold,d.support.initial)};
+    if(scaffold<4)d.reasons.push("fade_scaffold_for_independent_probe");
+  }
   const task=scenarioTask(scenario,index,d,run);d.targetSkill=task.skill;
   return {decision:d,task};
 }
