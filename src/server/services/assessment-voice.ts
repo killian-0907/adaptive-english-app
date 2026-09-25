@@ -1,4 +1,5 @@
 import "server-only";
+import { requestSlot } from "./lifecycle";
 import { requireVoiceDelivery } from "./delivery";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { ownedActivity, AssessmentError, account } from "./assessment";
@@ -23,6 +24,7 @@ export async function assessmentVoice(userId: string, activityId: string, audio?
     if(cached.data) return {audio:await cached.data.arrayBuffer()};
   }
   if(last?.processing_status === "processing" && Date.now()-Date.parse(last.created_at)<60000) throw new AssessmentError("An audio request is still processing. Retry shortly.");
+  await requestSlot(userId,"provider_voice",20,3600);
   const attempt = (last?.attempt_no ?? 0)+1;
   if(attempt>5) throw new AssessmentError("Please use the text fallback for this item after several voice attempts.");
   const {data:receipt,error:insertError} = await db.from("voice_interactions").insert({user_id:userId,session_id:activity.session_id,activity_id:activityId,attempt_no:attempt,interaction_type:type,processing_status:"processing",provider:"openai",model:audio ? process.env.OPENAI_STT_MODEL || "whisper-1" : process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts"}).select("id").single();
@@ -42,7 +44,9 @@ export async function assessmentVoice(userId: string, activityId: string, audio?
       return {voiceId:receipt.id,transcript:result.text};
     }
     const bytes = await provider.speak(item.tts!);
-    const path = `${userId}/${scope}/${activityId}.mp3`;
+    const path = `${userId}/${scope}/${receipt.id}.mp3`;
+    const reference=await db.from("voice_interactions").update({audio_object_path:path}).eq("id",receipt.id);
+    if(reference.error)throw new AssessmentError("Could not prepare audio storage.");
     const stored = await db.storage.from("voice-temp").upload(path,bytes,{contentType:"audio/mpeg",upsert:true});
     if(stored.error) throw new AssessmentError("Could not cache the listening prompt. Please retry.");
     await db.from("voice_interactions").update({source_text:item.tts,audio_object_path:path,processing_status:"completed",processing_complete:true,completed_at:new Date().toISOString()}).eq("id",receipt.id);

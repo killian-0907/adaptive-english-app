@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_deletion_jobs: {
+        Row: {
+          completed_at: string | null
+          requested_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          requested_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          requested_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           activity_type: string
@@ -1049,6 +1067,27 @@ export type Database = {
           },
         ]
       }
+      request_limits: {
+        Row: {
+          action: string
+          requests: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          requests: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          action?: string
+          requests?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       session_states: {
         Row: {
           confidence_level: number
@@ -1587,6 +1626,15 @@ export type Database = {
       }
       start_initial_assessment: { Args: { p_user: string }; Returns: string }
       start_learning: { Args: { p_user: string }; Returns: string }
+      take_request_slot: {
+        Args: {
+          p_action: string
+          p_limit: number
+          p_seconds: number
+          p_user: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       ability_dimension:

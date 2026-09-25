@@ -1,15 +1,17 @@
+import { RateLimitError } from "@/server/services/lifecycle";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError, z } from "zod";
 import { getAuthenticatedUser } from "@/server/auth";
 import { commandSchema } from "@/domain/learning/types";
 import { learningCommand, learningView, learningVoice, LearningError } from "@/server/services/learning";
-import { AssessmentError } from "@/server/services/assessment";
 import { ProviderUnavailable } from "@/server/services/assessment-provider";
 export const runtime="nodejs";
 export const maxDuration=60;
 function failure(error:unknown){
-  const message=error instanceof ProviderUnavailable?"The voice or evaluation service is unavailable. Your progress is safe. Try a structured activity, type instead of recording, or skip this response.":error instanceof LearningError||error instanceof AssessmentError?error.message:error instanceof ZodError?"Please check the response and try again.":"Could not complete this step. Your saved progress is safe; please resume.";
-  return NextResponse.json({error:message},{status:error instanceof ProviderUnavailable?503:400});
+  if(error instanceof RateLimitError)return NextResponse.json({error:"Please wait before trying again."},{status:429,headers:{"Retry-After":"60"}});
+  const provider=error instanceof ProviderUnavailable;const invalid=error instanceof ZodError;
+  console.error(JSON.stringify({event:"learning_request_failed",category:provider?"provider":invalid?"validation":"save_or_state",type:error instanceof Error?error.name:"unknown"}));
+  return NextResponse.json({error:provider?"The service is temporarily unavailable. Your saved progress is safe. Please retry.":invalid?"Please check your response and try again.":"Could not save this step. Your input is kept. Retry or resume saved progress."},{status:provider?503:400});
 }
 export async function GET(){const user=await getAuthenticatedUser();if(!user)return NextResponse.json({error:"Please sign in."},{status:401});try{return NextResponse.json(await learningView(user.id),{headers:{"Cache-Control":"no-store"}});}catch(e){return failure(e);}}
 export async function POST(request:NextRequest){

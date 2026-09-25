@@ -1,0 +1,11 @@
+"use client";
+import { useT } from "@/lib/i18n/client";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+export function AccountData(){const t=useT();const router=useRouter();
+  const dialog=useRef<HTMLDialogElement>(null);const [confirmation,setConfirmation]=useState("");const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");const [failed,setFailed]=useState(false);
+  async function request(deleting=false){setBusy(true);setMessage("");try{const r=await fetch("/api/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(deleting?{confirmation}:{action:"export"})});if(!r.ok)throw new Error(r.status===401?"Please sign in again.":"Could not finish this request. Please wait and retry.");if(deleting){sessionStorage.clear();router.replace("/login?message=deleted");router.refresh();return;}const blob=await r.blob();const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="adaptive-english-data.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setFailed(false);setMessage("Your data export is ready.");}catch(e){setFailed(true);setMessage(e instanceof TypeError?"You appear to be offline. Reconnect and try again.":(e as Error).message);}finally{setBusy(false);}}
+  return <section className="product-card"><h2>{t("ui.211")}</h2><p>{t("ui.212")}</p><button disabled={busy} onClick={()=>request()}>{busy?t("ui.213"):t("ui.214")}</button> <button onClick={()=>{setMessage("");dialog.current?.showModal();}}>{t("ui.215")}</button><p role={failed?"alert":"status"}>{t(message)}</p>
+    <dialog ref={dialog} aria-labelledby="delete-title" onClose={()=>setConfirmation("")}><h2 id="delete-title">{t("ui.216")}</h2><p>{t("ui.217")}</p><label>{t("ui.218")}<input value={confirmation} onChange={e=>setConfirmation(e.target.value)} autoComplete="off"/></label><div className="actions"><button disabled={busy} onClick={()=>dialog.current?.close()}>{t("ui.219")}</button><button disabled={busy||confirmation!=="DELETE"} onClick={()=>request(true)}>{busy?t("ui.221"):t("ui.222")}</button></div>{failed&&<p role="alert">{t(message)}</p>}</dialog>
+  </section>;
+}

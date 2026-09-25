@@ -1,4 +1,5 @@
 import "server-only";
+import { requestSlot } from "./lifecycle";
 import { voiceDelivery } from "./delivery";
 import { createHash, randomUUID } from "node:crypto";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -69,7 +70,7 @@ export async function submitAnswer(userId: string, input: unknown) {
     let evaluation = null;
     if (!answer.skip && resolveEvaluation(item.strategy,false,process.env.OPENAI_ENHANCED_EVALUATION==="true",!!process.env.OPENAI_API_KEY)==="AI_STRUCTURED") {
       try{
-        evaluation = current.metadata.responseHash === hash && current.metadata.evaluation ? evaluationSchema.parse(current.metadata.evaluation) : await new OpenAIAssessmentProvider().evaluate(item,answer.text);
+        evaluation = current.metadata.responseHash === hash && current.metadata.evaluation ? evaluationSchema.parse(current.metadata.evaluation) : await (async()=>{await requestSlot(userId,"evaluation",30,3600);return new OpenAIAssessmentProvider().evaluate(item,answer.text);})();
         checked(await db.rpc("cache_assessment_evaluation",{p_user:userId,p_activity:activity.id,p_token:token,p_hash:hash,p_evaluation:evaluation}));
         await account(userId,activity.session_id,activity.id,"assessment_evaluation",`${activity.id}:evaluation:${hash}`);
       }catch(error){if(!(error instanceof ProviderUnavailable))throw error;}

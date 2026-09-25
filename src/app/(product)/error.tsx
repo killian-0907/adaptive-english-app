@@ -1,2 +1,3 @@
 "use client";
-export default function ErrorPage({reset}:{reset:()=>void}){return <section className="product-card"><h1>We couldn’t load this page</h1><p>Your saved learning progress is safe. Please try again.</p><button onClick={reset}>Try again</button></section>;}
+import { useT } from "@/lib/i18n/client";
+export default function ErrorPage({reset}:{reset:()=>void}){const t=useT();return <section className="product-card"><h1>{t("ui.004")}</h1><p>{t("ui.005")}</p><button onClick={reset}>{t("ui.006")}</button></section>;}

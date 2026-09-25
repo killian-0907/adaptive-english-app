@@ -1,6 +1,6 @@
-# Adaptive English — Phase 11
+# Adaptive English — Phase 12
 
-Phase 11 adds the signed-in learner shell: Home, My English, session History, editable Settings and a Membership preview. Complete `/assessment`, then use `/home` to start or resume learning. See [Phase 11 behavior, boundaries and limitations](docs/phase-11-product-shell.md), [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
+Phase 12 adds shared English/Chinese/Spanish interface localization, password recovery, authenticated data export, confirmed account deletion, scheduled voice cleanup and reconnect recovery. Complete `/assessment`, then use `/home` to start or resume learning. See [Phase 12 lifecycle and deployment notes](docs/phase-12-lifecycle.md), [Phase 11 product shell](docs/phase-11-product-shell.md) and [Phase 9 architecture](docs/phase-9.md).
 
 The foundation boundaries below remain in effect; the assessment-specific processor is documented separately.
 

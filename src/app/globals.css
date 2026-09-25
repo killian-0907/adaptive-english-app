@@ -92,3 +92,10 @@ body {
 
 .assessment-shell input[type=range] { width:100%; max-width:400px; min-height:44px; }
 .goal-row > label:first-child { min-height:44px; display:flex; align-items:center; }
+.language-picker { display:flex; gap:12px; align-items:center; justify-content:flex-end; padding:10px 20px; background:#f4f6f2; color:#18352f; font-size:.9rem; }
+.language-picker select { border:1px solid #82978b; padding:8px; min-height:44px; border-radius:6px; max-width:180px; }
+.connection-banner { padding:16px; background:#fff2cd; color:#41320b; text-align:center; }
+dialog { margin:auto; max-width:min(560px,calc(100vw - 28px)); max-height:90vh; overflow:auto; padding:26px; border:1px solid #82978b; border-radius:14px; color:#18352f; }
+dialog::backdrop { background:#0007; }
+dialog input,.assessment-shell input[type=email],.assessment-shell input[type=password] { display:block; width:100%; border:1px solid #82978b; padding:12px; border-radius:8px; min-height:44px; }
+dialog .actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; }

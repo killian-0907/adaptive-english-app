@@ -17,7 +17,7 @@ export async function signInAction(formData: FormData) {
 
   const supabase = await createServerUserSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`/login?error=${"invalid"}`);
   redirect("/home");
 }
 
@@ -26,8 +26,8 @@ export async function signUpAction(formData: FormData) {
   if (!parsed.success) redirect("/login?error=Use+a+valid+email+and+an+8%2B+character+password");
 
   const supabase = await createServerUserSupabaseClient();
-  const { error } = await supabase.auth.signUp(parsed.data);
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  const { error } = await supabase.auth.signUp({...parsed.data,options:{emailRedirectTo:`${process.env.NEXT_PUBLIC_SITE_URL??"http://127.0.0.1:3000"}/auth/confirm`}});
+  if (error) redirect(`/login?error=${"invalid"}`);
   redirect("/login?message=Account+created.+Confirm+your+email+if+required,+then+sign+in.");
 }
 

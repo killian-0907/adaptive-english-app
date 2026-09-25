@@ -19,7 +19,9 @@
     "db:test": "supabase test db",
     "db:lint": "supabase db lint --local",
     "db:types": "supabase gen types typescript --local --schema public > src/types/database.generated.ts",
-    "db:status": "supabase status"
+    "db:status": "supabase status",
+    "voice:cleanup": "node --env-file=.env.local --experimental-strip-types scripts/cleanup-worker.ts",
+    "voice:worker": "node --env-file=.env.local --experimental-strip-types scripts/cleanup-worker.ts --watch"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

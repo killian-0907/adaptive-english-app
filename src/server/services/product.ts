@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createServerUserSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -12,12 +13,12 @@ import type { History } from "@/domain/learning/types";
 import { z } from "zod";
 
 function checked<T>(r:{data:T;error:unknown}):NonNullable<T>{if(r.error||r.data===null)throw new Error("Could not load your account. Please try again.");return r.data as NonNullable<T>;}
-export async function productIdentity(requireAssessment=false){
+export const productIdentity=cache(async(requireAssessment=false)=>{
   const user=await requireAuthenticatedUser();const db=await createServerUserSupabaseClient();
   const profile=checked(await db.from("profiles").select("native_language,interface_language,onboarding_status").eq("user_id",user.id).single());
   if(requireAssessment){const sessions=checked(await db.from("learning_sessions").select("id").eq("user_id",user.id).eq("status","completed").contains("starting_state_summary",{purpose:"initial_assessment_v1"}).limit(1));const route=entryRoute(profile.onboarding_status==="completed",!!sessions.length);if(route!=="/home")redirect(route);}
   return {id:user.id,email:user.email??"",language:profile.interface_language??"en",nativeLanguage:profile.native_language??"en"};
-}
+});
 export async function productProgress(userId:string){
   const db=createAdminSupabaseClient();
   const [a,k,p,c]=await Promise.all([
@@ -36,10 +37,10 @@ export async function productHome(userId:string){
   const [progress,preview,sessions]=await Promise.all([productProgress(userId),learningPreview(userId),db.from("learning_sessions").select("id,status").eq("user_id",userId).contains("starting_state_summary",{purpose:"normal_learning_v1"}).order("started_at",{ascending:false}).limit(1)]);
   return {progress,focus:preview.objective,active:checked(sessions)[0]?.status==="active"};
 }
-export async function productHistory(userId:string,sessionId?:string){
+export async function productHistory(userId:string,sessionId?:string,page=1){
   if(sessionId&&!z.uuid().safeParse(sessionId).success)return [];
   const db=createAdminSupabaseClient();
-  let query=db.from("learning_sessions").select("id,started_at,ended_at").eq("user_id",userId).eq("status","completed").contains("starting_state_summary",{purpose:"normal_learning_v1"}).order("started_at",{ascending:false}).limit(30);
+  let query=db.from("learning_sessions").select("id,started_at,ended_at").eq("user_id",userId).eq("status","completed").contains("starting_state_summary",{purpose:"normal_learning_v1"}).order("started_at",{ascending:false}).order("id",{ascending:false}).range((page-1)*30,page*30-1);
   if(sessionId)query=query.eq("id",sessionId);
   const sessions=checked(await query);if(!sessions.length)return [];
   const ids=sessions.map(s=>s.id);
