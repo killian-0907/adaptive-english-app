@@ -1,6 +1,8 @@
 # Phase 14: Netlify hosted beta
 
-Deployment is in progress. Netlify built Next.js and bundled the SSR handler and scheduled cleanup successfully. The initial deploy scan flagged the public site URL because the import marked all values secret. The URL value was removed from these notes; full secret scanning remains enabled without exceptions. Hosted verification is pending; local checks below have passed.
+Netlify published commit `848f693` successfully and reported no exposed secrets. Next.js SSR/proxy and the scheduled cleanup function were bundled successfully. The initial deploy scan flagged the public site URL because the import marked all values secret. The URL value was removed from these notes; full secret scanning remains enabled without exceptions.
+
+Production is currently protected by Netlify Login. Public health requests return HTTP 401 at that protection layer, so application health and hosted product checks are not yet claimed. The production-only visibility change is prepared but unsaved, pending the required security confirmation; deploy previews will remain private.
 
 ## Hosting and database
 
@@ -48,7 +50,9 @@ Local checks on 2026-09-26:
 - `corepack pnpm test:e2e`: 27 passed.
 - `corepack pnpm build`: passed, 25 dynamic routes and proxy.
 
-Pending hosted checks: deployment, health, signup/onboarding/assessment, Learn persistence, progress/history/settings, real browser voice capability/playback, owned export, dedicated test-account deletion, scheduled-function recognition/manual invocation, cross-user RLS, deployed bundle secret scan and mobile overflow.
+Hosted checks so far: deployment published; Netlify secret scan passed; admin API and read access to profiles, billing events, deletion jobs and voice interactions returned HTTP 200; Auth Site URL and six exact callback URLs were saved. The build recognized the daily cleanup schedule and bundled its function.
+
+Pending hosted checks after publication approval: application health, signup/onboarding/assessment, Learn persistence, progress/history/settings, real browser voice capability/playback, owned export, dedicated test-account deletion, scheduled-function manual invocation, cross-user RLS, deployed browser-bundle secret scan and mobile overflow. Phase 14 is not yet complete.
 
 No microphone recognition quality is claimed without actual microphone input. Phase 15 has not started.
 
