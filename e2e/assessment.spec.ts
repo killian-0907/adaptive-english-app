@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 
+import { speechMock } from "./speech-mock";
+
 test("new learner onboarding, deterministic evidence, resume, completion and secure results",async({page})=>{
   test.setTimeout(60000);
+  await speechMock(page);
   page.on("pageerror",error=>console.error("Browser error:",error.message));
   page.on("requestfailed",request=>console.error("Failed browser request:",new URL(request.url()).pathname,request.failure()?.errorText));
   const admin=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -20,12 +23,6 @@ test("new learner onboarding, deterministic evidence, resume, completion and sec
     await page.getByLabel("Work",{exact:true}).check();await page.locator('input[name="liked"][value="conversation"]').check();await page.locator('input[name="disliked"][value="writing"]').check();
     await page.getByRole("button",{name:"Start assessment",exact:true}).click();
     await expect(page.getByRole("heading",{name:"Which greeting did you hear?"})).toBeVisible();
-    // Test-only audio transport double: production TTS is separately contract-tested.
-    await page.route("**/api/assessment",async route=>{const req=route.request();if(req.method()==="POST"&&req.headers()["content-type"]?.includes("application/json")&&req.postDataJSON().action==="tts"){
-      // PCM WAV, 100 ms silence, generated solely in this test.
-      const wav=Buffer.alloc(1644);wav.write("RIFF",0);wav.writeUInt32LE(1636,4);wav.write("WAVEfmt ",8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write("data",36);wav.writeUInt32LE(1600,40);
-      await route.fulfill({status:200,contentType:"audio/wav",body:wav});
-    }else await route.continue();});
     await page.getByRole("button",{name:"Play / replay prompt",exact:true}).click();
     await page.getByLabel("Hello",{exact:true}).check();
     const response=page.waitForResponse(r=>r.url().endsWith("/api/assessment")&&r.request().method()==="POST"&&!!r.request().postData()?.includes('"action":"answer"'));
@@ -34,7 +31,12 @@ test("new learner onboarding, deterministic evidence, resume, completion and sec
     await page.reload();await expect(page.getByRole("heading",{name:"Say hello. One word is enough."})).toBeVisible();
     const forged=await page.request.post("/api/assessment",{headers:{origin:"http://127.0.0.1:3000"},data:{...submitted,data:{...submitted.data,user_id:userId,confidence:3}}});expect(forged.status()).toBe(400);
     const replay=await page.request.post("/api/assessment",{headers:{origin:"http://127.0.0.1:3000"},data:submitted});expect(replay.ok()).toBe(true);
-    await page.getByRole("button",{name:"I don't know / skip",exact:true}).click();
+    // Resume a confirmed browser transcript. Free open-ended assessment remains unassessed.
+    await page.getByRole("button",{name:"Record response",exact:true}).click();
+    await page.getByRole("button",{name:"Confirm recognized text",exact:true}).click();
+    await expect(page.getByText("Water please",{exact:true})).toBeVisible();
+    await page.reload();await expect(page.getByText("Water please",{exact:true})).toBeVisible();
+    await page.getByRole("button",{name:"Continue",exact:true}).click();
     await page.getByRole("button",{name:"I'm tired · finish for now",exact:true}).click();
     await expect(page.getByRole("heading",{name:"Ready to begin"})).toBeVisible();
     const profile=await admin.from("profiles").select("onboarding_status").eq("user_id",userId).single();expect(profile.data?.onboarding_status).toBe("completed");

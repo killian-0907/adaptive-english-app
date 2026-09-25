@@ -1,6 +1,6 @@
 # Foundation implementation status
 
-This is the historical foundation report. Current implementation and local verification are documented in [Phase 8](phase-8.md) and [Phase 9](phase-9.md); the original environment limitations below are historical.
+This is the historical foundation report. Current implementation and local verification are documented in [Phase 8](phase-8.md) , [Phase 9](phase-9.md), and [Phase 10](phase-10-free-voice.md); the original environment limitations below are historical.
 
 ## Implemented
 

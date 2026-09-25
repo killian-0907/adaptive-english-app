@@ -6,7 +6,8 @@ import { advance, initialModel, languageSupport, nextItem } from "@/domain/asses
 import { evaluationSchema, onboardingSchema, responseSchema, supportSchema, type AssessmentState } from "@/domain/assessment/contracts";
 import { getItem } from "@/domain/assessment/items";
 import { scoreResponse } from "@/domain/assessment/evidence";
-import { OpenAIAssessmentProvider } from "./assessment-provider";
+import { OpenAIAssessmentProvider, ProviderUnavailable } from "./assessment-provider";
+import { resolveEvaluation } from "@/domain/learning/bounded";
 import { recordUsage } from "@/server/repositories/usage";
 
 export class AssessmentError extends Error {}
@@ -29,8 +30,8 @@ export async function assessmentView(userId: string) {
   const activity = checked(await user.from("activities").select("id,metadata").eq("session_id",sid).eq("sequence_no",state.turns.length).single());
   const previousVoice = checked(await user.from("voice_interactions").select("id,transcript").eq("activity_id",activity.id).eq("interaction_type","stt").eq("processing_status","completed").order("attempt_no",{ascending:false}).limit(1));
   return { onboarding: false as const, complete: false as const, activityId: activity.id, count: state.turns.length, profile,
-    savedVoice: previousVoice[0] ?? null,
-    support: languageSupport(state.difficulty), savedSupport: supportSchema.parse((activity.metadata as {support?:unknown}).support ?? {hints:0,replays:0,retries:0,translation:false,transcript:false}), item: { id: item.id, type: item.type, prompt: item.prompt, options: item.options, hasAudio: !!item.tts, spoken: item.type === "spoken" || item.type === "practical", instruction: item.native[profile.native_language ?? "en"] ?? "Try your best. You can ask for help or skip.", hint: item.hint } };
+    savedVoice: previousVoice[0] ?? null, enhancedAvailable:!!process.env.OPENAI_API_KEY,
+    support: languageSupport(state.difficulty), savedSupport: supportSchema.parse((activity.metadata as {support?:unknown}).support ?? {hints:0,replays:0,retries:0,translation:false,transcript:false}), item: { id: item.id, type: item.type, prompt: item.prompt, options: item.options, hasAudio: !!item.tts, speechText:item.tts??undefined, spoken: item.type === "spoken" || item.type === "practical", instruction: item.native[profile.native_language ?? "en"] ?? "Try your best. You can ask for help or skip.", hint: item.hint } };
 }
 export type AssessmentView = Awaited<ReturnType<typeof assessmentView>>;
 export async function ownedActivity(userId: string, activityId: string) {
@@ -65,10 +66,12 @@ export async function submitAnswer(userId: string, input: unknown) {
     answer.support.retries=Math.max(answer.support.retries,Math.max(0,attempts.length-1));
     if(item.type === "listening" && !answer.skip && answer.support.replays === 0 && !answer.support.transcript) throw new AssessmentError("Listen to the prompt first, or choose the reading fallback.");
     let evaluation = null;
-    if (!answer.skip && item.strategy === "evaluator") {
-      evaluation = current.metadata.responseHash === hash && current.metadata.evaluation ? evaluationSchema.parse(current.metadata.evaluation) : await new OpenAIAssessmentProvider().evaluate(item,answer.text);
-      checked(await db.rpc("cache_assessment_evaluation",{p_user:userId,p_activity:activity.id,p_token:token,p_hash:hash,p_evaluation:evaluation}));
-      await account(userId,activity.session_id,activity.id,"assessment_evaluation",`${activity.id}:evaluation:${hash}`);
+    if (!answer.skip && resolveEvaluation(item.strategy,false,process.env.OPENAI_ENHANCED_EVALUATION==="true",!!process.env.OPENAI_API_KEY)==="AI_STRUCTURED") {
+      try{
+        evaluation = current.metadata.responseHash === hash && current.metadata.evaluation ? evaluationSchema.parse(current.metadata.evaluation) : await new OpenAIAssessmentProvider().evaluate(item,answer.text);
+        checked(await db.rpc("cache_assessment_evaluation",{p_user:userId,p_activity:activity.id,p_token:token,p_hash:hash,p_evaluation:evaluation}));
+        await account(userId,activity.session_id,activity.id,"assessment_evaluation",`${activity.id}:evaluation:${hash}`);
+      }catch(error){if(!(error instanceof ProviderUnavailable))throw error;}
     }
     const session = checked(await db.from("learning_sessions").select("session_summary").eq("id",activity.session_id).eq("user_id",userId).single());
     const scored = scoreResponse(item,answer,evaluation,voice);

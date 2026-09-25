@@ -1,6 +1,6 @@
-# Adaptive English — Phase 9
+# Adaptive English — Phase 10
 
-Phase 9 adds the first adaptive learning loop: teaching decisions, normal sessions, validated evidence, conservative model updates and retry-safe transactional persistence. Complete `/assessment`, then start or resume `/learn`. See [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
+Phase 10 adds free browser voice and bounded immersive scenarios on top of the adaptive learning loop: teaching decisions, normal sessions, validated evidence, conservative model updates and retry-safe transactional persistence. Complete `/assessment`, then start or resume `/learn`. See [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
 
 The foundation boundaries below remain in effect; the assessment-specific processor is documented separately.
 
@@ -249,7 +249,7 @@ pnpm lint
 pnpm typecheck
 ```
 
-The Playwright suite covers authentication, assessment and three normal-learning scenarios: adaptive deterministic interaction/model update, explicit method rejection, and repeated-struggle/session-state adaptation.
+The Playwright suite covers authentication, assessment, adaptive learning, and five free-voice flows: browser speech, unsupported recognition, enhanced-service fallback, multi-turn scenario completion, and listening versus revealed-text evidence. Browser API mocks exist only in the tests.
 
 ## Migrations
 
@@ -261,6 +261,7 @@ The Playwright suite covers authentication, assessment and three normal-learning
 6. `20260924000600_rls_and_grants.sql` — explicit grants + RLS policies
 7. `20260924000700_initial_assessment.sql` — onboarding, assessment and initialization
 8. `20260925000100_adaptive_learning.sql` — normal sessions and atomic learner-model updates
+9. `20260925000200_free_voice.sql` — service-only browser transcript receipts with ownership and idempotency
 
 ## Normal-learning transaction boundary
 
@@ -277,3 +278,7 @@ Migration `20260924000700_initial_assessment.sql` implements only the service-ro
 Migration `20260925000100_adaptive_learning.sql` adds service-role-only normal-session planning, controls, response leases, a consistent model snapshot, atomic model updates and session completion. Existing RLS and composite ownership constraints remain in effect. No second learner model or lesson history is created.
 
 Live OpenAI TTS, STT, and open-ended evaluator verification is deferred because the API account has no available credits. Provider code exists and contract/integration behavior is covered by local tests. The key authenticated and real requests reached OpenAI, which returned `insufficient_quota / credit_balance_exhausted`; those operations have not passed live verification. Structured activities and saved progress remain usable without buying credits.
+
+## Free voice and immersive scenarios
+
+Browser-native speech is the default where supported, with typing and readable prompts always available. Ten bounded everyday scenario families use local evaluation; unknown responses remain unassessed. Optional OpenAI voice requires explicit opt-in, and paid nuanced evaluation is disabled unless `OPENAI_ENHANCED_EVALUATION=true`. Browser speech may depend on vendor services and is not guaranteed offline. See [Phase 10 architecture and limitations](docs/phase-10-free-voice.md).

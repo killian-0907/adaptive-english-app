@@ -3,6 +3,7 @@ import { reviewNeed } from "./processor";
 import { VERSION, type Decision, type Method, type Snapshot, type Task } from "./types";
 export const topics = ["polite_requests", "meeting_times", "past_events", "clarification"] as const;
 const objectives: Record<string,string> = { polite_requests: "Make a polite request", meeting_times: "Arrange a useful meeting time", past_events: "Describe a past event", clarification: "Ask for clarification" };
+Object.assign(objectives,{introduce:"Introduce yourself",confirm:"Confirm useful information",greet:"Respond to a greeting",accept:"Accept an invitation",choose:"Make a choice",close:"Close an exchange politely",ask_location:"Ask where something is",repair:"Repair a misunderstanding"});
 const clamp = (n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 export function classifyDifficulty(s: Snapshot) {
   const recent = s.history.filter(h=>h.session_id===s.sessionId && h.status==="completed" && h.metadata.quality!==null).slice(-3);
@@ -33,7 +34,7 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   else if(difficultyState==="too_difficult" && previous){topic=previous.topic;purpose="weakness_repair";reasons.push("repeated_struggle");}
   else if(previous && (last?.metadata.quality??0)>=3 && !last?.metadata.support && previous.purpose!=="transfer"){topic=previous.topic;purpose="transfer";reasons.push("check_reuse_in_new_context");}
   else { const goalTopic=s.goals.includes("work")?"meeting_times":s.goals.includes("school")?"clarification":"polite_requests"; topic=recentTopics.includes(goalTopic)?topics.find(t=>!recentTopics.includes(t))??topics[current.length%topics.length]:goalTopic;purpose=current.length===0?"communication":"progression";reasons.push("goal_relevance_and_breadth"); }
-  if(!topics.includes(topic as typeof topics[number])) topic="polite_requests";
+  if(!objectives[topic]) topic="polite_requests";
   const candidates: Method[]=purpose==="review"?(due[0]?.modality.endsWith("recognition")?["sentence_building","speaking","review"]:["review","sentence_building","listening"]):purpose==="weakness_repair"?["sentence_building","grammar_explanation","vocabulary_context","speaking"]:purpose==="transfer"?["transfer","role_play","guided_writing"]:purpose==="consolidation"?["vocabulary_context","sentence_building","review"]:["vocabulary_context","conversation","role_play","listening","speaking","guided_writing"];
   const preferenceKey: Record<Method,string>={conversation:"conversation",role_play:"conversation",listening:"listening",speaking:"conversation",sentence_building:"writing",vocabulary_context:"examples",grammar_explanation:"examples",guided_writing:"writing",review:"repetition",transfer:"conversation"};
   const rejected=s.preferences.filter(p=>p.preference_type==="method"&&p.strength<=-2&&history.slice(-3).some(h=>h.metadata.decision.method===p.target_key)).map(p=>p.target_key);
@@ -76,6 +77,16 @@ const content: Record<string,{sentences:string[]; zh:string; es:string; cue:stri
   past_events:{sentences:["I walked.","I visited a friend yesterday.","I finished the report before the meeting."],zh:"描述过去发生的事情。",es:"Describe un hecho pasado.",cue:"yesterday",rule:"Regular verbs often add -ed when describing a completed past action."},
   clarification:{sentences:["Again, please.","Could you say that again?","Could you explain what you mean by that?"],zh:"没听懂时，请对方重复或解释。",es:"Pide que repitan o aclaren algo.",cue:"again / explain",rule:"Ask for repetition or clarification when the message is unclear."},
 };
+Object.assign(content,{
+  introduce:{sentences:["I'm Alex.","My name is Alex.","Hello, this is Alex speaking."],zh:"介绍自己。",es:"Preséntate.",cue:"name",rule:"I'm… or My name is… introduces you."},
+  confirm:{sentences:["Yes.","Yes, I do.","Yes, I have a reservation."],zh:"确认信息。",es:"Confirma la información.",cue:"yes",rule:"Confirm the information the other person asked about."},
+  greet:{sentences:["Hello.","I'm good, thanks.","I'm doing well, thank you."],zh:"回应问候。",es:"Responde al saludo.",cue:"thanks",rule:"A brief greeting or answer keeps the exchange going."},
+  accept:{sentences:["Yes, please.","Sounds good.","Yes, I'd like that, thanks."],zh:"接受邀请。",es:"Acepta la invitación.",cue:"yes",rule:"Say yes or use a short phrase to accept an invitation."},
+  choose:{sentences:["Medium, please.","Still water, please.","I'd like the blue shirt, please."],zh:"说明你的选择。",es:"Indica tu elección.",cue:"choice",rule:"Name the option you want. A short phrase is enough."},
+  close:{sentences:["Thanks.","No, thank you.","That's all, thank you."],zh:"礼貌地结束交流。",es:"Termina con cortesía.",cue:"thanks",rule:"Thank the other person and say if you need nothing else."},
+  ask_location:{sentences:["Where is it?","Where is the library?","Could you tell me where the library is?"],zh:"询问地点。",es:"Pregunta por un lugar.",cue:"where",rule:"Where is…? asks for a location."},
+  repair:{sentences:["No, still water.","No, still water, please.","Sorry, I meant still water, please."],zh:"纠正误解。",es:"Corrige el malentendido.",cue:"I meant",rule:"Correct the mistaken detail and state what you mean."},
+});
 export function makeTask(d:Decision, sequence:number):Task {
   const c=content[d.topic]; const variant=d.purpose==="transfer"?1+sequence%2:sequence%2; const model=c.sentences[Math.min(2,Math.floor(d.difficulty/2)+(d.purpose==="transfer"?1:0))];
   const recognition=["vocabulary_context","review","listening"].includes(d.method); const exact=recognition||["sentence_building","grammar_explanation"].includes(d.method);

@@ -1568,6 +1568,15 @@ export type Database = {
         Args: { p_activity: string; p_kind: string; p_user: string }
         Returns: Json
       }
+      record_browser_transcript: {
+        Args: {
+          p_activity: string
+          p_attempt: string
+          p_text: string
+          p_user: string
+        }
+        Returns: string
+      }
       save_assessment_onboarding: {
         Args: { p_data: Json; p_user: string }
         Returns: undefined

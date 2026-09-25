@@ -11,6 +11,8 @@ export default defineConfig({
   timeout: 180000,
   use: { baseURL: "http://127.0.0.1:3100", trace: "off", screenshot: "off", video: "off" },
   webServer: {
+    // This suite is explicitly invoked paid verification; ordinary local tests stay free.
+    env: { OPENAI_ENHANCED_EVALUATION: "true" },
     command: "corepack pnpm start --port 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
