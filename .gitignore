@@ -14,6 +14,7 @@
 *.tsbuildinfo
 .eslintcache
 /.vercel
+/.netlify
 /tmp
 /temp
 *.tmp

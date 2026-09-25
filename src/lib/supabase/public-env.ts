@@ -9,6 +9,6 @@ export function getPublicSupabaseEnv() {
     throw new Error("Missing required environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
   }
 
-  if (process.env.VERCEL && (new URL(url).protocol !== "https:" || !new URL(url).hostname.endsWith(".supabase.co"))) throw new Error("Hosted Supabase configuration required");
+  if ((process.env.NETLIFY === "true" || process.env.VERCEL) && (new URL(url).protocol !== "https:" || !new URL(url).hostname.endsWith(".supabase.co"))) throw new Error("Hosted Supabase configuration required");
   return { url, publishableKey };
 }

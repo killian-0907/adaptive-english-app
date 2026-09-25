@@ -1,5 +1,5 @@
 import "server-only";
-import { deploymentReady } from "@/lib/deployment";
+import { deploymentReady, isHosted } from "@/lib/deployment";
 import { createClient } from "@supabase/supabase-js";
 import { getPublicSupabaseEnv } from "./public-env";
 import { getSupabaseServiceRoleKey } from "./server-env";
@@ -9,7 +9,7 @@ import { getSupabaseServiceRoleKey } from "./server-env";
  * server-only repositories/services that own authoritative writes.
  */
 export function createAdminSupabaseClient() {
-  if (process.env.VERCEL && !deploymentReady()) throw new Error("Hosted deployment configuration is incomplete");
+  if (isHosted() && !deploymentReady()) throw new Error("Hosted deployment configuration is incomplete");
   const { url } = getPublicSupabaseEnv();
   return createClient(url, getSupabaseServiceRoleKey(), {
     auth: {

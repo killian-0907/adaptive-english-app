@@ -1,0 +1,14 @@
+[build]
+  command = "corepack pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  ADSENSE_DELIVERY_ENABLED = "false"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[functions."voice-cleanup"]
+  schedule = "0 3 * * *"
