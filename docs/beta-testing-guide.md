@@ -1,6 +1,6 @@
 # Try the English learning beta
 
-Open https://adaptive-english-app.netlify.app in a recent Chrome or Edge browser. Use a test account you are comfortable deleting. This is an early beta with a small set of everyday situations. It does not certify an English level.
+Open the beta link supplied with your invitation in a recent Chrome or Edge browser. Use a test account you are comfortable deleting. This is an early beta with a small set of everyday situations. It does not certify an English level.
 
 1. **Create your account.** Use an email address you can open. Follow the confirmation email if one arrives. Check spam once. If no email arrives, tell us; do not buy anything or keep requesting messages. Try “Forgot password” once and check whether the reset link lets you choose a new password.
 2. **Choose your starting point.** Select your native language, goal and preferred ways to practise. Complete the short assessment honestly. “I don't know,” help and stopping when tired are useful information.
