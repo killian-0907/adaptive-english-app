@@ -14,7 +14,7 @@ The API client attaches a bearer token, request UUID, app version and platform. 
 
 The server verifies bearer tokens with Supabase `getUser(token)` and scopes the public database client to that token, preserving RLS. Malformed explicit Authorization headers never fall back to valid cookies. Cookie-only authentication and same-origin mutation protection remain intact. Originless requests with bearer syntax still require trusted authentication; header syntax is never identity. Account deletion queues deny further access.
 
-Native callbacks: `adaptiveenglish://auth/callback` and `adaptiveenglish://auth/recovery`. Both were saved in hosted Supabase alongside all six existing web/local redirects. Native code exchanges a PKCE code; recovery updates the password then clears the local session. Installed-app email delivery and browser fallback still need end-to-end device verification, The hosted dashboard reports default email templates; no custom SMTP/template or paid mail service was added. No claim of a successful physical-device auth flow is made.
+Native callbacks: `adaptiveenglish://auth/callback` and `adaptiveenglish://auth/recovery`. Both were saved in hosted Supabase alongside all six existing web/local redirects. Native code exchanges a PKCE code; recovery updates the password then clears the local session. Installed-app email delivery and browser fallback still need end-to-end device verification. The hosted dashboard reports default email templates; no custom SMTP/template or paid mail service was added. No claim of a successful physical-device auth flow is made.
 
 ## Native product surfaces
 
@@ -52,13 +52,30 @@ From the repository root: `corepack pnpm mobile:start`, `mobile:android`, `mobil
 - Production web build: passed.
 - Native typecheck: passed.
 - Native tests: 23 passed across five suites (major screens, startup routing, session restoration/logout races, tab-blur cancellation, API refresh/idempotency, contracts, storage/drafts, translations and speech permissions/cancellation).
-- Native lint: passes; Jest mock imports carry test-only style warnings.
+- Native lint: passed with zero errors and five warnings: three Jest mock imports and two intentional lifecycle dependency warnings (activity-bound cancellation and the test focus toggle).
 - Expo dependency compatibility: passed.
 - Expo Doctor: 21/21 passed.
 - Android and iOS JavaScript/Hermes bundle export: passed.
 - Android native prebuild without toolchain installation: passed; manifest includes microphone permission, recognition-service query and application deep links.
 
-These are code/configuration checks, not physical-device runtime results. No Android SDK/emulator or accessible Android device was found, and Windows cannot run an iOS simulator. Expo CLI is authenticated as killian-3034 and the dedicated project is @killian-3034/adaptive-english-beta (80599b84-99a2-4a4d-920d-d45de2ffdf33). EAS account usage confirmed the Free plan, 15 Android and 15 iOS monthly builds, no add-ons and zero estimated cost. Only the three public mobile variables were uploaded to the preview environment. Android uses an EAS-managed signing key; iOS preview targets a simulator and requires no Apple membership. Superseded queued builds were canceled after review fixes; final cloud build results and hosted verification are recorded below when completed. Install/launch, physical TTS/STT and device email flows remain unverified.
+These are code/configuration checks, not physical-device runtime results. No Android SDK/emulator or accessible Android device was found, and Windows cannot run an iOS simulator. Expo CLI is authenticated as killian-3034 and the dedicated project is @killian-3034/adaptive-english-beta (80599b84-99a2-4a4d-920d-d45de2ffdf33). EAS account usage confirmed the Free plan, 15 Android and 15 iOS monthly builds, no add-ons and zero estimated cost. Only the three public mobile variables were uploaded to the development and preview environments. Android uses an EAS-managed signing key; iOS preview targets a simulator and requires no Apple membership. Superseded queued builds were canceled after review fixes; final cloud build results and hosted verification are recorded below. Install/launch, physical TTS/STT and device email flows remain unverified.
+
+## Cloud build verification
+
+Both final EAS preview builds finished successfully from implementation commit `32d82c51d4895e8069402935867757f2db9e48a0`, app version 0.1.0 and build/version code 1, with internal distribution:
+
+- Android APK: [successful build abba56f5-ba3a-4ccb-9aeb-7a00fcbec968](https://expo.dev/accounts/killian-3034/projects/adaptive-english-beta/builds/abba56f5-ba3a-4ccb-9aeb-7a00fcbec968).
+- iOS simulator application: [successful build 4d123b9d-a4c6-4731-b1f7-0c692b3d4fe9](https://expo.dev/accounts/killian-3034/projects/adaptive-english-beta/builds/4d123b9d-a4c6-4731-b1f7-0c692b3d4fe9).
+
+These are native compiler/package results, not install/launch or microphone/TTS/STT runtime passes. The development-client profile is configured; the completed artifacts use the standalone preview profile. Expo Go compatibility for native recognition is not claimed. No App Store/TestFlight/Play submission was performed. EAS warned that a future App Store submission needs an encryption declaration; no store declaration or publishing was attempted for this simulator build. A documentation-only follow-up commit records the results without changing application source.
+
+## Hosted verification
+
+The implementation commit `32d82c51d4895e8069402935867757f2db9e48a0` was pushed and published by the existing Netlify deployment. Its service-worker version matched that commit. With two disposable hosted accounts, verification passed for trusted bearer authentication, forged-token denial, incompatible-version rejection, cross-user denial, RLS protection of authoritative learner state, onboarding/assessment, idempotent native transcript receipts, all four mobile summary views, learning submission/session completion, settings read/write, feedback, export and account deletion. The deleted identity was rejected on subsequent API access.
+
+Existing cookie authentication passed on six hosted web pages. Sixteen browser bundles were checked against server secrets with zero findings; no advertising scripts were present. Both disposable accounts were cleaned up. The pre-commit scan also found zero secrets or forbidden artifacts across 274 repository files and three native bundle/metadata files. Local environment files, signing material and generated binaries remain ignored.
+
+The three public mobile variables are configured in both EAS development and preview environments. Supabase's default confirmation email uses `ConfirmationURL`; the two exact native redirects are configured alongside existing web redirects. Actual email delivery, installed-app handoff and an uninstalled-app browser fallback remain device-verification limitations, not claimed passes.
 
 ## Device verification plan
 
