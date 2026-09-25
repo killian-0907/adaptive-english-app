@@ -1,10 +1,10 @@
 # Phase 14: Netlify hosted beta
 
-Deployment is in progress. Hosted verification is pending; local checks below have passed.
+Deployment is in progress. Netlify built Next.js and bundled the SSR handler and scheduled cleanup successfully. The initial deploy scan flagged the public site URL because the import marked all values secret. The URL value was removed from these notes; full secret scanning remains enabled without exceptions. Hosted verification is pending; local checks below have passed.
 
 ## Hosting and database
 
-- Planned canonical origin: https://adaptive-english-app.netlify.app
+- Canonical origin: the HTTPS project URL stored in `NEXT_PUBLIC_SITE_URL` and shown in the Netlify dashboard. Its literal value is omitted here because Netlify marks the imported setting secret and scans the repository for it.
 - GitHub repository: `killian-0907/adaptive-english-app`, branch `master`.
 - Netlify uses its automatically detected modern Next.js/OpenNext runtime, `.next` output, and Node 22. Server Components, Server Actions, route handlers, proxy and authenticated SSR remain enabled.
 - Existing Supabase Free project: `adaptive-english-app`, reference `owcgdnqwyprvmqfsnzul`, Tokyo (`ap-northeast-1`). No additional project was created.
@@ -27,7 +27,7 @@ Netlify environment variable names (never values):
 
 The new server secret is preferred. `SUPABASE_SERVICE_ROLE_KEY` remains a compatibility fallback for the local Supabase CLI environment. Netlify configuration validation requires newer publishable/secret keys, a hosted HTTPS database, a canonical HTTPS origin and a cleanup secret of at least 32 characters.
 
-Supabase Site URL is the canonical origin. Signup uses `/auth/confirm`; recovery uses `/auth/confirm?next=recovery`. These exact HTTPS callback URLs and their localhost/127.0.0.1 development equivalents are being configured. No wildcard hosted redirect is needed.
+Supabase Site URL is the canonical origin. Signup uses `/auth/confirm`; recovery uses `/auth/confirm?next=recovery`. These exact HTTPS callback URLs and their localhost/127.0.0.1 development equivalents are configured. No wildcard hosted redirect is needed.
 
 ## Maintenance and paid services
 
