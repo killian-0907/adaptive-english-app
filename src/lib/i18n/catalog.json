@@ -1993,5 +1993,145 @@
     "en": "Prepare for about {seconds} seconds. Aim for around {words} words; a shorter clear response is welcome.",
     "zh": "准备约{seconds}秒，目标为{words}个词，也可以给出更短的清晰回答。",
     "es": "Prepárate unos {seconds} segundos. Intenta usar unas {words} palabras; una respuesta más breve y clara también sirve."
+  },
+  "billing.400": {
+    "en": "Billing settings",
+    "zh": "账单设置",
+    "es": "Ajustes de facturación"
+  },
+  "billing.401": {
+    "en": "Test mode only. No real-money charging is enabled.",
+    "zh": "仅限测试模式，不会收取真实费用。",
+    "es": "Solo modo de prueba. No se cobran pagos reales."
+  },
+  "billing.402": {
+    "en": "Subscription state",
+    "zh": "订阅状态",
+    "es": "Estado de suscripción"
+  },
+  "billing.403": {
+    "en": "Canceled: access ends on",
+    "zh": "已取消：权限截止日期",
+    "es": "Cancelada: acceso hasta"
+  },
+  "billing.404": {
+    "en": "Current period ends on",
+    "zh": "当前周期截止日期",
+    "es": "El período actual termina el"
+  },
+  "billing.405": {
+    "en": "Pricing not configured yet",
+    "zh": "价格尚未配置",
+    "es": "Precios aún sin configurar"
+  },
+  "billing.406": {
+    "en": "Checkout is not configured.",
+    "zh": "结账尚未配置。",
+    "es": "El pago no está configurado."
+  },
+  "billing.407": {
+    "en": "Open test checkout",
+    "zh": "打开测试结账",
+    "es": "Abrir pago de prueba"
+  },
+  "billing.408": {
+    "en": "Manage test billing",
+    "zh": "管理测试账单",
+    "es": "Gestionar facturación de prueba"
+  },
+  "billing.409": {
+    "en": "Billing is unavailable. Please retry or manage an existing subscription.",
+    "zh": "账单服务暂不可用。请重试或管理已有订阅。",
+    "es": "La facturación no está disponible. Reintenta o gestiona tu suscripción actual."
+  },
+  "billing.410": {
+    "en": "Returning from checkout does not confirm payment. Access updates after a verified provider event.",
+    "zh": "从结账返回不代表付款成功。权限将在服务商事件验证后更新。",
+    "es": "Volver del pago no confirma el cobro. El acceso cambia tras un evento verificado."
+  },
+  "billing.411": {
+    "en": "month",
+    "zh": "月",
+    "es": "mes"
+  },
+  "billing.412": {
+    "en": "year",
+    "zh": "年",
+    "es": "año"
+  },
+  "billing.413": {
+    "en": "free",
+    "zh": "免费",
+    "es": "gratis"
+  },
+  "billing.414": {
+    "en": "active",
+    "zh": "有效",
+    "es": "activa"
+  },
+  "billing.415": {
+    "en": "trial",
+    "zh": "试用",
+    "es": "prueba"
+  },
+  "billing.416": {
+    "en": "canceled",
+    "zh": "已取消",
+    "es": "cancelada"
+  },
+  "billing.417": {
+    "en": "expired",
+    "zh": "已过期",
+    "es": "caducada"
+  },
+  "billing.418": {
+    "en": "payment_issue",
+    "zh": "付款问题",
+    "es": "problema de pago"
+  },
+  "billing.419": {
+    "en": "Premium",
+    "zh": "高级会员",
+    "es": "Premium"
+  },
+  "billing.420": {
+    "en": "Test-mode membership. Core learning remains available on Free.",
+    "zh": "测试模式会员。免费方案仍可使用核心学习功能。",
+    "es": "Suscripción de prueba. El aprendizaje esencial sigue siendo gratuito."
+  },
+  "billing.421": {
+    "en": "Ad-free eligible surfaces",
+    "zh": "适用页面无广告",
+    "es": "Sin anuncios en las páginas elegibles"
+  },
+  "billing.422": {
+    "en": "Premium voice (provider availability required)",
+    "zh": "高级语音（需要服务商可用）",
+    "es": "Voz premium (requiere disponibilidad del proveedor)"
+  },
+  "billing.423": {
+    "en": "Active",
+    "zh": "有效",
+    "es": "Activa"
+  },
+  "billing.424": {
+    "en": "Trial",
+    "zh": "试用",
+    "es": "Prueba"
+  },
+  "billing.425": {
+    "en": "Canceled",
+    "zh": "已取消",
+    "es": "Cancelada"
+  },
+  "billing.426": {
+    "en": "Expired",
+    "zh": "已过期",
+    "es": "Caducada"
+  },
+  "billing.427": {
+    "en": "Payment issue",
+    "zh": "付款问题",
+    "es": "Problema de pago"
   }
 }

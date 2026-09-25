@@ -1,4 +1,6 @@
-# Adaptive English — Phase 12
+# Adaptive English — Phase 13
+
+Phase 13 adds test-only Stripe Checkout/Portal, signed idempotent subscription sync, provider allowance reservations, a disabled AdSense provider boundary, protected Vercel cleanup and deployment readiness. External cloud/Stripe/SMTP/AdSense setup remains required; no live charges or live ads are enabled. See [Phase 13 production setup and blockers](docs/phase-13-production.md).
 
 Phase 12 adds shared English/Chinese/Spanish interface localization, password recovery, authenticated data export, confirmed account deletion, scheduled voice cleanup and reconnect recovery. Complete `/assessment`, then use `/home` to start or resume learning. See [Phase 12 lifecycle and deployment notes](docs/phase-12-lifecycle.md), [Phase 11 product shell](docs/phase-11-product-shell.md) and [Phase 9 architecture](docs/phase-9.md).
 
@@ -19,7 +21,7 @@ This repository preserves the secure foundation approved for the adaptive Englis
 - Supabase generated-type workflow
 - Vitest and Playwright foundations
 
-Payments, ad providers, advanced progress charts and a full design system remain deferred. The teaching engine is deterministic; paid voice and open-response evaluation remain behind the existing provider boundary.
+Live payments and ads, advanced progress charts and a full design system remain deferred. The teaching engine is deterministic; paid voice and open-response evaluation remain behind the existing provider boundary.
 
 ## Prerequisites
 

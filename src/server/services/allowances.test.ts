@@ -1,0 +1,12 @@
+import { beforeEach, expect, it, vi } from "vitest";
+vi.mock("server-only",()=>({}));
+const mocks=vi.hoisted(()=>({rpc:vi.fn(),update:vi.fn(),eq:vi.fn(),entitlements:vi.fn()}));
+vi.mock("@/lib/supabase/admin",()=>({createAdminSupabaseClient:()=>({rpc:mocks.rpc,from:()=>({update:mocks.update})})}));
+vi.mock("@/domain/entitlements/service",()=>({resolveEffectiveEntitlements:mocks.entitlements}));
+vi.mock("./lifecycle",()=>({RateLimitError:class extends Error{}}));
+import { withAllowance } from "./allowances";
+import { ProviderUnavailable } from "./assessment-provider";
+beforeEach(()=>{vi.clearAllMocks();mocks.entitlements.mockResolvedValue({voice_usage_allowance:1,ai_usage_allowance:0});mocks.rpc.mockResolvedValue({data:"reservation",error:null});mocks.eq.mockReturnValue({eq:async()=>({error:null})});mocks.update.mockReturnValue({eq:mocks.eq});});
+it("reserves before a call and records successful usage",async()=>{const call=vi.fn(async()=>{expect(mocks.rpc).toHaveBeenCalled();return "audio";});expect(await withAllowance("owner","voice",call)).toBe("audio");expect(mocks.rpc).toHaveBeenCalledWith("reserve_provider_usage",expect.objectContaining({p_user:"owner",p_limit:1,p_resource:"premium_voice_calls"}));expect(mocks.update).toHaveBeenCalledWith({status:"recorded"});});
+it("voids failed calls so retries do not consume a successful-call allowance",async()=>{await expect(withAllowance("owner","voice",async()=>{throw new Error("provider failed");})).rejects.toThrow();expect(mocks.update).toHaveBeenCalledWith({status:"voided"});});
+it("does not call a provider when capped and lets AI use the existing teaching fallback",async()=>{mocks.rpc.mockResolvedValue({data:null,error:null});const call=vi.fn();await expect(withAllowance("owner","ai",call)).rejects.toBeInstanceOf(ProviderUnavailable);await expect(withAllowance("owner","voice",call)).rejects.toThrow("Browser voice and typing");expect(call).not.toHaveBeenCalled();});

@@ -1,4 +1,5 @@
 import "server-only";
+import { removeBilling } from "../../../scripts/billing-lifecycle";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { exportSelections, deleteInOrder } from "@/domain/product/lifecycle";
 import { productHistory } from "./product";
@@ -29,7 +30,7 @@ export async function deleteAccount(userId:string){
   const db=createAdminSupabaseClient();
   await deleteInOrder({
     queue:async()=>{const r=await db.from("account_deletion_jobs").upsert({user_id:userId},{onConflict:"user_id",ignoreDuplicates:true});if(r.error)throw new Error("Deletion unavailable");},
-    storage:()=>removeUserObjects(db,userId),
+    storage:async()=>{await removeBilling(db,userId);await removeUserObjects(db,userId);},
     identity:async()=>{const r=await db.auth.admin.deleteUser(userId);if(r.error&&r.error.status!==404)throw new Error("Deletion unavailable");},
     complete:async()=>{const r=await db.from("account_deletion_jobs").update({completed_at:new Date().toISOString()}).eq("user_id",userId);if(r.error)throw new Error("Deletion pending");},
   });

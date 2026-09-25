@@ -1,4 +1,5 @@
 import "server-only";
+import { withAllowance } from "./allowances";
 import { requestSlot } from "./lifecycle";
 import { voiceDelivery, requireVoiceDelivery } from "./delivery";
 import { createHash, randomUUID } from "node:crypto";
@@ -84,7 +85,7 @@ async function answer(userId:string,command:Extract<Command,{action:"answer"}>){
       const target=responseTarget(task,voice,m.transcript??false);
       const item=providerItem({...task,...target},decision);
       try{
-        evaluation=m.responseHash===hash&&m.evaluation?evaluationSchema.parse(m.evaluation):await (async()=>{await requestSlot(userId,"evaluation",30,3600);return new OpenAIAssessmentProvider().evaluate(item,text);})();
+        evaluation=m.responseHash===hash&&m.evaluation?evaluationSchema.parse(m.evaluation):await (async()=>{await requestSlot(userId,"evaluation",30,3600);return withAllowance(userId,"ai",()=>new OpenAIAssessmentProvider().evaluate(item,text));})();
         checked(await db.rpc("cache_assessment_evaluation",{p_user:userId,p_activity:activity.id,p_token:token,p_hash:hash,p_evaluation:evaluation}).then(r=>({...r,data:true})));
         await account(userId,activity.session_id,activity.id,"learning_evaluation",`${activity.id}:evaluation:${hash}`);
       }catch(error){if(!(error instanceof ProviderUnavailable))throw error;evaluationStrategy="FALLBACK";}

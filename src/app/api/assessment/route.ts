@@ -13,10 +13,10 @@ import { requireVoiceDelivery } from "@/server/services/delivery";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 function failure(error:unknown){
-  if(error instanceof RateLimitError)return NextResponse.json({error:"Please wait before trying again."},{status:429,headers:{"Retry-After":"60"}});
-  const provider=error instanceof ProviderUnavailable;const invalid=error instanceof ZodError;
-  console.error(JSON.stringify({event:"learning_request_failed",category:provider?"provider":invalid?"validation":"save_or_state",type:error instanceof Error?error.name:"unknown"}));
-  return NextResponse.json({error:provider?"The service is temporarily unavailable. Your saved progress is safe. Please retry.":invalid?"Please check your response and try again.":"Could not save this step. Your input is kept. Retry or resume saved progress."},{status:provider?503:400});
+  if(error instanceof RateLimitError)return NextResponse.json({error:error.message},{status:429,headers:{"Cache-Control":"no-store"}});
+  const requestId=crypto.randomUUID();const provider=error instanceof ProviderUnavailable;const invalid=error instanceof ZodError;
+  console.error(JSON.stringify({event:"learning_request_failed",requestId,category:provider?"provider":invalid?"validation":"save_or_state",type:error instanceof Error?error.name:"unknown"}));
+  return NextResponse.json({error:provider?"The service is temporarily unavailable. Your saved progress is safe. Please retry.":invalid?"Please check your response and try again.":"Could not save this step. Your input is kept. Retry or resume saved progress."},{status:provider?503:400,headers:{"X-Request-ID":requestId}});
 }
 export async function GET() {
   const user = await getAuthenticatedUser(); if(!user) return NextResponse.json({error:"Please sign in again."},{status:401});

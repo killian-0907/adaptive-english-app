@@ -274,6 +274,57 @@ export type Database = {
           },
         ]
       }
+      billing_customers: {
+        Row: {
+          created_at: string
+          customer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      billing_events: {
+        Row: {
+          event_id: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
+      billing_locks: {
+        Row: {
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       entitlement_definitions: {
         Row: {
           created_at: string
@@ -1535,6 +1586,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_billing_lock: {
+        Args: { p_deleting?: boolean; p_token: string; p_user: string }
+        Returns: boolean
+      }
+      apply_billing_event: {
+        Args: {
+          p_cancel: boolean
+          p_end: string
+          p_event: string
+          p_start: string
+          p_status: Database["public"]["Enums"]["subscription_status"]
+          p_subscription: string
+          p_token: string
+          p_user: string
+        }
+        Returns: boolean
+      }
       cache_assessment_evaluation: {
         Args: {
           p_activity: string
@@ -1612,6 +1680,15 @@ export type Database = {
           p_activity: string
           p_attempt: string
           p_text: string
+          p_user: string
+        }
+        Returns: string
+      }
+      reserve_provider_usage: {
+        Args: {
+          p_key: string
+          p_limit: number
+          p_resource: string
           p_user: string
         }
         Returns: string

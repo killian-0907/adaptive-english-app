@@ -1,4 +1,5 @@
 "use server";
+import { siteOrigin } from "@/lib/deployment";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerUserSupabaseClient } from "@/lib/supabase/server";
@@ -6,7 +7,7 @@ import { passwordSchema } from "@/domain/product/lifecycle";
 import { z } from "zod";
 export async function recoverPassword(form:FormData){
   const email=z.email().max(254).safeParse(form.get("email"));
-  if(email.success){const db=await createServerUserSupabaseClient();await db.auth.resetPasswordForEmail(email.data,{redirectTo:`${process.env.NEXT_PUBLIC_SITE_URL??"http://127.0.0.1:3000"}/auth/confirm?next=recovery`});}
+  if(email.success){const db=await createServerUserSupabaseClient();await db.auth.resetPasswordForEmail(email.data,{redirectTo:`${siteOrigin()}/auth/confirm?next=recovery`});}
   redirect("/auth/recovery?sent=1");
 }
 export async function resetPassword(form:FormData){

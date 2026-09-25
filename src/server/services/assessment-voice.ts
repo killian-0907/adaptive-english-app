@@ -1,4 +1,5 @@
 import "server-only";
+import { withAllowance } from "./allowances";
 import { requestSlot } from "./lifecycle";
 import { requireVoiceDelivery } from "./delivery";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -33,7 +34,7 @@ export async function assessmentVoice(userId: string, activityId: string, audio?
     const provider = new OpenAIAssessmentProvider();
     if(audio) {
       // Raw recordings are memory-only; they are never written to disk/Storage.
-      const result = await provider.transcribe(audio);
+      const result = await withAllowance(userId,"voice",()=>provider.transcribe(audio));
       const saved = await db.from("voice_interactions").update({transcript:result.text,recognition_status:"uncertain_transcript",processing_status:"completed",processing_complete:true,completed_at:new Date().toISOString()}).eq("id",receipt.id);
       if(saved.error) throw new AssessmentError("Could not save the recognized response.");
       for(const observation of voiceObservations(result)) {
@@ -43,7 +44,7 @@ export async function assessmentVoice(userId: string, activityId: string, audio?
       await account(userId,activity.session_id,activityId,`${scope}_stt`,`${receipt.id}:stt`);
       return {voiceId:receipt.id,transcript:result.text};
     }
-    const bytes = await provider.speak(item.tts!);
+    const bytes = await withAllowance(userId,"voice",()=>provider.speak(item.tts!));
     const path = `${userId}/${scope}/${receipt.id}.mp3`;
     const reference=await db.from("voice_interactions").update({audio_object_path:path}).eq("id",receipt.id);
     if(reference.error)throw new AssessmentError("Could not prepare audio storage.");

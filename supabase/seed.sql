@@ -58,3 +58,8 @@ on conflict (surface_key) do update set
   enabled = excluded.enabled,
   protected_surface = excluded.protected_surface,
   configuration = excluded.configuration;
+
+-- Fresh installs populate definitions during seed, after migrations.
+insert into public.plan_entitlements(plan_id,entitlement_definition_id,value)
+select p.id,e.id,case when e.entitlement_key='ads_enabled' then 'false'::jsonb when e.entitlement_key='can_use_voice' then 'true'::jsonb else e.default_value end
+from public.plans p cross join public.entitlement_definitions e where p.plan_key='premium' on conflict do nothing;
