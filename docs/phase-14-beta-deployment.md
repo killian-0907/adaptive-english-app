@@ -1,8 +1,8 @@
 # Phase 14: Netlify hosted beta
 
-Netlify published commit `848f693` successfully and reported no exposed secrets. Next.js SSR/proxy and the scheduled cleanup function were bundled successfully. The initial deploy scan flagged the public site URL because the import marked all values secret. The URL value was removed from these notes; full secret scanning remains enabled without exceptions.
+Netlify published application commit `79f9ebb` successfully and reported no exposed secrets. Next.js SSR/proxy and the scheduled cleanup function were bundled successfully. The initial deploy scan flagged the public site URL because the import marked all values secret. The URL value was removed from these notes; full secret scanning remains enabled without exceptions.
 
-Production is currently protected by Netlify Login. Public health requests return HTTP 401 at that protection layer, so application health and hosted product checks are not yet claimed. The production-only visibility change is prepared but unsaved, pending the required security confirmation; deploy previews will remain private.
+Production is public following the account owner's visibility confirmation; deploy previews remain private. Public application health returns HTTP 200 with `status: ready`. No upgrade or paid service was added.
 
 ## Hosting and database
 
@@ -50,11 +50,25 @@ Local checks on 2026-09-26:
 - `corepack pnpm test:e2e`: 27 passed.
 - `corepack pnpm build`: passed, 25 dynamic routes and proxy.
 
-Hosted checks so far: deployment published; Netlify secret scan passed; admin API and read access to profiles, billing events, deletion jobs and voice interactions returned HTTP 200; Auth Site URL and six exact callback URLs were saved. The build recognized the daily cleanup schedule and bundled its function.
+Hosted checks on 2026-09-26:
 
-Pending hosted checks after publication approval: application health, signup/onboarding/assessment, Learn persistence, progress/history/settings, real browser voice capability/playback, owned export, dedicated test-account deletion, scheduled-function manual invocation, cross-user RLS, deployed browser-bundle secret scan and mobile overflow. Phase 14 is not yet complete.
+- Published deployment and full Netlify secret scan passed without scan exceptions. Auth Site URL and six exact callback URLs were verified.
+- A dedicated, admin-confirmed disposable account signed in through the hosted UI. Onboarding saved the Work goal; initial assessment, fatigue exit, result summary and learning entry worked.
+- A correct learning response produced feedback and persisted evidence. Ending the session displayed the saved expression and summary; Home, My English, History, Settings and Membership rendered. Hosted storage contained seven evidence events, four learner-model changes and two teaching decisions at the checkpoint; ability estimates persisted.
+- Anonymous export returned 401. Authenticated export returned only the account's data and no tested secrets. A second account could neither read nor update the first profile through RLS; a foreign assessment activity request was rejected.
+- Account deletion rejected incorrect confirmation, then removed the disposable account's Auth identity, profile and temporary voice object. Reusing its session returned 401. The primary test account was also deleted after UI verification.
+- HTTP cleanup returned 401 without authorization and 200 with its server credential. The scheduled function's public URL returned 403. Netlify's scheduled function was manually invoked and logged `scheduled_cleanup`, zero removed and zero failed, taking 2151.82 ms. Its daily schedule is 03:00 UTC.
+- Seven authenticated pages and 17 deployed browser bundles were scanned: zero secret findings and zero advertising script references. Membership showed checkout/pricing unconfigured and external ads disabled.
+- Home, Learn summary, active Learn with voice controls, My English, Settings and Login were checked at an actual 390-pixel viewport: no horizontal document overflow.
+- Browser voice controls were available. Playback/replay controls were invoked without a visible error; audible output was not independently verified. Recording entered Listening and returned to the recording control without a confirmed transcript. No recognition accuracy or pronunciation result is claimed. Typed fallback was exercised successfully.
 
-No microphone recognition quality is claimed without actual microphone input. Phase 15 has not started.
+## Remaining verification limits
+
+Public signup and verification-email delivery have not passed an end-to-end hosted check. The synthetic example.com signup was rejected by the Auth provider with `email_address_invalid`; the product flow was therefore verified with an admin-confirmed disposable identity. This does not establish that a real mailbox's signup, verification or password-recovery email will succeed. Email confirmation was not disabled and no paid mail service was introduced. A deliverable test mailbox is still needed to close this check.
+
+Actual audible browser playback and recognition with real microphone input remain unverified. Paid OpenAI TTS, STT and open-ended evaluator verification remains deferred for the credit limitation above. These limitations are not reported as passing provider tests.
+
+Deployment and the checks listed above are complete, but Phase 14 retains the email and actual audio verification limits. Phase 15 has not started.
 
 ## References
 
