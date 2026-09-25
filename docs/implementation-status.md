@@ -1,5 +1,7 @@
 # Foundation implementation status
 
+This is the historical foundation report. Current implementation and local verification are documented in [Phase 8](phase-8.md) and [Phase 9](phase-9.md); the original environment limitations below are historical.
+
 ## Implemented
 
 - Next.js 16 App Router / TypeScript strict / Tailwind project skeleton

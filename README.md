@@ -1,6 +1,6 @@
-# Adaptive English — Phase 8
+# Adaptive English — Phase 9
 
-Phase 8 now adds onboarding, adaptive initial assessment, turn-based voice provider integration, evidence-driven initialization and resumable results. See [Phase 8 architecture and operation](docs/phase-8.md). Start at `/assessment`.
+Phase 9 adds the first adaptive learning loop: teaching decisions, normal sessions, validated evidence, conservative model updates and retry-safe transactional persistence. Complete `/assessment`, then start or resume `/learn`. See [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
 
 The foundation boundaries below remain in effect; the assessment-specific processor is documented separately.
 
@@ -19,7 +19,7 @@ This repository preserves the secure foundation approved for the adaptive Englis
 - Supabase generated-type workflow
 - Vitest and Playwright foundations
 
-Phase 8 adds onboarding, initial assessment and its narrow evaluator/voice/initialization services. Normal learning, the Adaptive Teaching Engine, payments, ad providers, dashboard, progress charts and a full design system remain deferred.
+Payments, ad providers, final dashboard, progress charts and a full design system remain deferred. The teaching engine is deterministic; paid voice and open-response evaluation remain behind the existing provider boundary.
 
 ## Prerequisites
 
@@ -178,7 +178,7 @@ Authoritative state is backend-only, including:
 
 `learner_model_changes` also has unique `(user_id, change_key)`, providing a second future idempotency boundary.
 
-The Phase 8 assessment processor commits responses, evidence and initial state atomically. Normal-learning updates remain deferred. AI calls never run inside a database transaction.
+The assessment and normal-learning processors commit responses, evidence and derived state atomically. Normal learning uses a per-learner revision check and a response lease; AI calls never run inside a database transaction.
 
 ## Entitlements
 
@@ -249,7 +249,7 @@ pnpm lint
 pnpm typecheck
 ```
 
-The Playwright suite covers authentication plus onboarding, deterministic assessment, resume, completion and initial state creation.
+The Playwright suite covers authentication, assessment and three normal-learning scenarios: adaptive deterministic interaction/model update, explicit method rejection, and repeated-struggle/session-state adaptation.
 
 ## Migrations
 
@@ -259,10 +259,12 @@ The Playwright suite covers authentication plus onboarding, deterministic assess
 4. `20260924000400_auth_profile_trigger.sql` — secure Auth-user profile trigger
 5. `20260924000500_indexes.sql` — approved query-path indexes
 6. `20260924000600_rls_and_grants.sql` — explicit grants + RLS policies
+7. `20260924000700_initial_assessment.sql` — onboarding, assessment and initialization
+8. `20260925000100_adaptive_learning.sql` — normal sessions and atomic learner-model updates
 
-## Normal-learning transaction boundary deferred
+## Normal-learning transaction boundary
 
-The assessment-specific processor now provides the following atomic operation; a general normal-learning processor remains out of scope:
+The assessment and normal-learning processors provide the following atomic operation:
 
 1. confirms/inserts idempotent evidence
 2. updates the relevant derived learner state
@@ -271,3 +273,7 @@ The assessment-specific processor now provides the following atomic operation; a
 5. marks evidence applied
 
 Migration `20260924000700_initial_assessment.sql` implements only the service-role assessment transaction, resume/claim boundaries and onboarding persistence. It does not expose a client-callable generic learner-state update API.
+
+Migration `20260925000100_adaptive_learning.sql` adds service-role-only normal-session planning, controls, response leases, a consistent model snapshot, atomic model updates and session completion. Existing RLS and composite ownership constraints remain in effect. No second learner model or lesson history is created.
+
+Live OpenAI TTS, STT, and open-ended evaluator verification is deferred because the API account has no available credits. Provider code exists and contract/integration behavior is covered by local tests. The key authenticated and real requests reached OpenAI, which returned `insufficient_quota / credit_balance_exhausted`; those operations have not passed live verification. Structured activities and saved progress remain usable without buying credits.

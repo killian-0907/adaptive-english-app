@@ -9,6 +9,7 @@ export default async function ProtectedPage() {
       <h1 className="text-2xl font-semibold">Protected route</h1>
       <p>Signed in as {user.email ?? user.id}.</p>
       <Link href="/assessment" className="underline">Start or resume your assessment</Link>
+      <Link href="/learn" className="underline">Start or resume learning</Link>
       <form action={signOutAction}><button className="border p-2" type="submit">Sign out</button></form>
     </main>
   );

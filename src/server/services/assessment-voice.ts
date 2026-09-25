@@ -4,10 +4,11 @@ import { ownedActivity, AssessmentError, account } from "./assessment";
 import { OpenAIAssessmentProvider } from "./assessment-provider";
 import { voiceObservations } from "@/domain/voice/observations";
 
-export async function assessmentVoice(userId: string, activityId: string, audio?: File) {
-  const {activity,item} = await ownedActivity(userId,activityId);
+export async function assessmentVoice(userId: string, activityId: string, audio?: File, resolveActivity = ownedActivity) {
+  const {activity,item} = await resolveActivity(userId,activityId);
   if(activity.status !== "active") throw new AssessmentError("This activity is no longer active.");
   const db = createAdminSupabaseClient();
+  const scope = activity.activity_type === "normal_learning" ? "learning" : "assessment";
   const type = audio ? "stt" : "tts";
   if(audio && !["spoken","practical"].includes(item.type)) throw new AssessmentError("This activity does not accept speech.");
   if(!audio && !item.tts) throw new AssessmentError("No listening prompt for this activity.");
@@ -35,15 +36,15 @@ export async function assessmentVoice(userId: string, activityId: string, audio?
         const savedEvidence=await db.from("evidence_events").upsert({user_id:userId,session_id:activity.session_id,activity_id:activityId,source:"voice_processor",source_interaction_id:receipt.id,evidence_kind:observation.kind,target_skill:observation.skill,modality:"spoken_production",result:"neutral",voice_uncertainty:true,evaluator_confidence_level:0,dedupe_key:`${receipt.id}:${observation.kind}`,metadata:observation.metadata},{onConflict:"user_id,dedupe_key",ignoreDuplicates:true});
         if(savedEvidence.error) throw new AssessmentError("Could not save the voice observation. Please retry.");
       }
-      await account(userId,activity.session_id,activityId,"assessment_stt",`${receipt.id}:stt`);
+      await account(userId,activity.session_id,activityId,`${scope}_stt`,`${receipt.id}:stt`);
       return {voiceId:receipt.id,transcript:result.text};
     }
     const bytes = await provider.speak(item.tts!);
-    const path = `${userId}/assessment/${activityId}.mp3`;
+    const path = `${userId}/${scope}/${activityId}.mp3`;
     const stored = await db.storage.from("voice-temp").upload(path,bytes,{contentType:"audio/mpeg",upsert:true});
     if(stored.error) throw new AssessmentError("Could not cache the listening prompt. Please retry.");
     await db.from("voice_interactions").update({source_text:item.tts,audio_object_path:path,processing_status:"completed",processing_complete:true,completed_at:new Date().toISOString()}).eq("id",receipt.id);
-    await account(userId,activity.session_id,activityId,"assessment_tts",`${activityId}:tts`);
+    await account(userId,activity.session_id,activityId,`${scope}_tts`,`${activityId}:tts`);
     return {audio:bytes};
   } catch(error) {
     await db.from("voice_interactions").update({processing_status:"failed",recognition_status:"provider_uncertainty"}).eq("id",receipt.id);

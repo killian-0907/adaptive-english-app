@@ -2,12 +2,12 @@
 
 This project is a modular monolith. Domain folders are boundaries, not separate services.
 
-- `learner/`: long-term learner state and knowledge state rules (deferred)
-- `evidence/`: evidence ingestion/update orchestration (deferred)
-- `teaching/`: Adaptive Teaching Engine (deferred)
-- `sessions/`: learning-session orchestration (deferred)
-- `voice/`: STT/TTS provider contracts (deferred)
-- `preferences/`: learner preference logic (deferred)
+- `learning/processor.ts`: conservative normal-learning evidence updates, review and method associations
+- `learning/engine.ts`: structured teaching decisions, content, support and correction rules
+- `learning/types.ts`: validated commands/evidence and typed model snapshots
+- `assessment/`: adaptive initial assessment and initialization
+- `voice/`: shared STT/TTS and narrow evaluator contracts
+- Explicit preferences remain separate from observed method effectiveness in `learning/`.
 - `goals/`: learning-goal logic (deferred)
 - `entitlements/`: effective capability resolution (foundation implemented)
 - `usage/`: resource-usage boundary (repository foundation implemented)

@@ -922,6 +922,7 @@ export type Database = {
         Row: {
           created_at: string
           interface_language: string | null
+          learning_revision: number
           native_language: string | null
           onboarding_status: string
           updated_at: string
@@ -930,6 +931,7 @@ export type Database = {
         Insert: {
           created_at?: string
           interface_language?: string | null
+          learning_revision?: number
           native_language?: string | null
           onboarding_status?: string
           updated_at?: string
@@ -938,6 +940,7 @@ export type Database = {
         Update: {
           created_at?: string
           interface_language?: string | null
+          learning_revision?: number
           native_language?: string | null
           onboarding_status?: string
           updated_at?: string
@@ -1507,6 +1510,10 @@ export type Database = {
         Args: { p_activity: string; p_token: string; p_user: string }
         Returns: boolean
       }
+      claim_learning_response: {
+        Args: { p_activity: string; p_token: string; p_user: string }
+        Returns: boolean
+      }
       commit_assessment_response: {
         Args: {
           p_activity: string
@@ -1520,6 +1527,43 @@ export type Database = {
         }
         Returns: undefined
       }
+      commit_learning_response: {
+        Args: {
+          p_activity: string
+          p_applied: Json
+          p_events: Json
+          p_patches: Json
+          p_response: Json
+          p_revision: number
+          p_token: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      control_learning: {
+        Args: {
+          p_action: string
+          p_activity: string
+          p_user: string
+          p_value: string
+        }
+        Returns: undefined
+      }
+      end_learning: {
+        Args: { p_session: string; p_user: string }
+        Returns: undefined
+      }
+      learning_snapshot: { Args: { p_user: string }; Returns: Json }
+      plan_learning: {
+        Args: {
+          p_decision: Json
+          p_revision: number
+          p_session: string
+          p_task: Json
+          p_user: string
+        }
+        Returns: string
+      }
       record_assessment_support: {
         Args: { p_activity: string; p_kind: string; p_user: string }
         Returns: Json
@@ -1529,6 +1573,7 @@ export type Database = {
         Returns: undefined
       }
       start_initial_assessment: { Args: { p_user: string }; Returns: string }
+      start_learning: { Args: { p_user: string }; Returns: string }
     }
     Enums: {
       ability_dimension:
