@@ -1,4 +1,16 @@
 /node_modules
+**/node_modules/
+**/.expo/
+/apps/mobile/dist/
+/apps/mobile/android/
+/apps/mobile/ios/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.apk
+*.aab
+*.ipa
 /.pnpm-store
 /.next
 /out

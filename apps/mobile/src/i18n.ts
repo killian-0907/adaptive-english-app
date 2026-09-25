@@ -1,0 +1,220 @@
+import { translate, type Language } from "../../../src/lib/i18n/core";
+export type { Language };
+const native: Record<string, Record<Language, string>> = {
+  Save: { en: "Save", zh: "保存", es: "Guardar" },
+  "Assessment complete": {
+    en: "Assessment complete",
+    zh: "评估完成",
+    es: "Evaluación completada",
+  },
+  Listen: { en: "Listen", zh: "聆听", es: "Escuchar" },
+  Stop: { en: "Stop", zh: "停止", es: "Detener" },
+  Skip: { en: "Skip", zh: "跳过", es: "Omitir" },
+  Hint: { en: "Hint", zh: "提示", es: "Pista" },
+  "I am tired": { en: "I am tired", zh: "我累了", es: "Estoy cansado/a" },
+  "Support language": {
+    en: "Support language",
+    zh: "辅助语言",
+    es: "Idioma de apoyo",
+  },
+  "Correction style": {
+    en: "Correction style",
+    zh: "纠错方式",
+    es: "Estilo de corrección",
+  },
+  Pace: { en: "Pace", zh: "节奏", es: "Ritmo" },
+  Welcome: { en: "Welcome", zh: "欢迎", es: "Bienvenido/a" },
+  Account: { en: "Account", zh: "帐户", es: "Cuenta" },
+  "Voice settings": {
+    en: "Voice settings",
+    zh: "语音设置",
+    es: "Ajustes de voz",
+  },
+  "Privacy and data": {
+    en: "Privacy and data",
+    zh: "隐私和数据",
+    es: "Privacidad y datos",
+  },
+  Feedback: { en: "Feedback", zh: "反馈", es: "Comentarios" },
+  dataPrivacy: {
+    en: "Your learning responses and preferences support your adaptive practice. Export your data or request account deletion here.",
+    zh: "学习回答和偏好用于自适应练习。可在此导出数据或申请删除帐户。",
+    es: "Tus respuestas y preferencias apoyan la práctica adaptativa. Exporta tus datos o solicita eliminar tu cuenta aquí.",
+  },
+  preferenceHelp: {
+    en: "Tap to change preference: −2 avoid, 0 neutral, +2 prefer.",
+    zh: "点击调整偏好：−2 避免，0 中立，+2 喜欢。",
+    es: "Toca para cambiar: −2 evitar, 0 neutral, +2 preferir.",
+  },
+  en: { en: "English", zh: "英语", es: "Inglés" },
+  zh: { en: "Chinese", zh: "中文", es: "Chino" },
+  es: { en: "Spanish", zh: "西班牙语", es: "Español" },
+  none: { en: "New to English", zh: "刚开始学英语", es: "Principiante" },
+  some_school: {
+    en: "Some school English",
+    zh: "在学校学过",
+    es: "Algo de inglés escolar",
+  },
+  regular_use: {
+    en: "Use English regularly",
+    zh: "经常使用英语",
+    es: "Uso habitual del inglés",
+  },
+  immediate: { en: "Immediate", zh: "即时", es: "Inmediata" },
+  after_turn: { en: "After my turn", zh: "回答后", es: "Al terminar" },
+  gentle: { en: "Gentle", zh: "温和", es: "Suave" },
+  minimal: { en: "Minimal", zh: "少量", es: "Mínima" },
+  balanced: { en: "Balanced", zh: "均衡", es: "Equilibrado" },
+  brisk: { en: "Brisk", zh: "快速", es: "Ágil" },
+  lesson: {
+    en: "Lesson felt wrong",
+    zh: "课程不合适",
+    es: "La lección no encajó",
+  },
+  easy: { en: "Too easy", zh: "太简单", es: "Demasiado fácil" },
+  difficult: { en: "Too difficult", zh: "太难", es: "Demasiado difícil" },
+  voice: { en: "Voice issue", zh: "语音问题", es: "Problema de voz" },
+  bug: { en: "Bug", zh: "程序错误", es: "Error" },
+  confusing: { en: "UI issue", zh: "界面问题", es: "Problema de interfaz" },
+  other: { en: "Other", zh: "其他", es: "Otro" },
+  Experience: {
+    en: "Previous experience",
+    zh: "既往经验",
+    es: "Experiencia previa",
+  },
+  "Speech rate": { en: "Speech rate", zh: "语速", es: "Velocidad de voz" },
+  Included: { en: "Included", zh: "已包含", es: "Incluido" },
+  Unavailable: { en: "Unavailable", zh: "不可用", es: "No disponible" },
+  "Your feedback": {
+    en: "Your feedback",
+    zh: "您的反馈",
+    es: "Tus comentarios",
+  },
+  "Your response": { en: "Your response", zh: "您的回答", es: "Tu respuesta" },
+  "More speaking": {
+    en: "More speaking",
+    zh: "更多口语",
+    es: "Más conversación",
+  },
+  "Back to normal": {
+    en: "Back to normal pace",
+    zh: "恢复正常节奏",
+    es: "Volver al ritmo normal",
+  },
+  Assessment: {
+    en: "Initial assessment",
+    zh: "初始评估",
+    es: "Evaluación inicial",
+  },
+  "Check response": {
+    en: "Submit response",
+    zh: "提交回答",
+    es: "Enviar respuesta",
+  },
+  "Finish for now": {
+    en: "Finish for now",
+    zh: "先到这里",
+    es: "Terminar por ahora",
+  },
+  beta: { en: "Native beta", zh: "原生测试版", es: "Beta nativa" },
+  loading: {
+    en: "Getting your practice ready…",
+    zh: "正在准备练习…",
+    es: "Preparando tu práctica…",
+  },
+  retry: { en: "Try again", zh: "重试", es: "Intentar de nuevo" },
+  network: {
+    en: "Could not connect. Your draft is kept. Try again when connected.",
+    zh: "无法连接。草稿已保留，联网后请重试。",
+    es: "No se pudo conectar. Tu borrador sigue guardado. Reintenta con conexión.",
+  },
+  auth: {
+    en: "Please sign in again. Your draft is kept on this device.",
+    zh: "请重新登录。草稿保留在此设备上。",
+    es: "Vuelve a iniciar sesión. Tu borrador sigue en este dispositivo.",
+  },
+  update: {
+    en: "Please update the beta app to continue.",
+    zh: "请更新测试版应用后继续。",
+    es: "Actualiza la aplicación beta para continuar.",
+  },
+  configured: {
+    en: "This beta build is not configured. Contact the beta organizer.",
+    zh: "此测试版本尚未配置。请联系测试组织者。",
+    es: "Esta versión beta no está configurada. Contacta al organizador.",
+  },
+  sent: {
+    en: "If available, check your email for the link, including spam.",
+    zh: "请检查邮箱及垃圾邮件中的链接。",
+    es: "Si está disponible, revisa el enlace en tu correo, incluido spam.",
+  },
+  reset: {
+    en: "Choose a new password",
+    zh: "设置新密码",
+    es: "Elige una nueva contraseña",
+  },
+  privacy: {
+    en: "Speech may be processed by Apple, Google or your device's speech service. We do not save raw microphone audio. Only text you confirm is sent for practice; recognition is uncertain. You can type instead.",
+    zh: "语音可能由 Apple、Google 或设备语音服务处理。我们不保存麦克风原始音频。仅发送您确认的文字用于练习；识别结果存在不确定性。您也可以打字。",
+    es: "Apple, Google o el servicio de voz del dispositivo pueden procesar el audio. No guardamos audio del micrófono. Solo se envía el texto que confirmas; el reconocimiento es incierto. También puedes escribir.",
+  },
+  idle: { en: "Ready to record", zh: "可以开始录音", es: "Listo para grabar" },
+  recording: {
+    en: "Listening… Stop when finished.",
+    zh: "正在聆听…完成后请停止。",
+    es: "Escuchando… Detén la grabación al terminar.",
+  },
+  denied: {
+    en: "Microphone access was declined. You can type or try again.",
+    zh: "麦克风权限被拒绝。您可以打字或重试。",
+    es: "Se denegó el micrófono. Puedes escribir o reintentar.",
+  },
+  blocked: {
+    en: "Speech permission is unavailable. Enable it in device Settings or type instead.",
+    zh: "语音权限不可用。可在设备设置中启用，或改为打字。",
+    es: "El permiso de voz no está disponible. Actívalo en Ajustes o escribe.",
+  },
+  unavailable: {
+    en: "Speech recognition is unavailable in this build or device. Please type your response.",
+    zh: "此版本或设备不支持语音识别。请键入回答。",
+    es: "El reconocimiento no está disponible en esta versión o dispositivo. Escribe tu respuesta.",
+  },
+  error: {
+    en: "Speech was not understood. Retry or type; no score was recorded.",
+    zh: "未能识别语音。请重试或打字；没有记录分数。",
+    es: "No se reconoció la voz. Reintenta o escribe; no se registró una puntuación.",
+  },
+  record: { en: "Record response", zh: "录制回答", es: "Grabar respuesta" },
+  confirmVoice: {
+    en: "Use this recognized text",
+    zh: "使用此识别文字",
+    es: "Usar este texto reconocido",
+  },
+  deviceSettings: {
+    en: "Open device Settings",
+    zh: "打开设备设置",
+    es: "Abrir Ajustes del dispositivo",
+  },
+  purchases: {
+    en: "Purchases are unavailable in the native beta.",
+    zh: "原生测试版不提供购买功能。",
+    es: "Las compras no están disponibles en la beta nativa.",
+  },
+  exported: {
+    en: "Export shared. Remove copies you no longer need.",
+    zh: "已分享导出文件。请删除不再需要的副本。",
+    es: "Exportación compartida. Elimina las copias que ya no necesites.",
+  },
+  deleteConfirm: {
+    en: "Delete your account permanently? This removes your learning data.",
+    zh: "永久删除帐户？这将删除您的学习数据。",
+    es: "¿Eliminar tu cuenta permanentemente? Se borrarán tus datos de aprendizaje.",
+  },
+  saved: { en: "Saved", zh: "已保存", es: "Guardado" },
+  nextPage: { en: "Next page", zh: "下一页", es: "Página siguiente" },
+  previousPage: { en: "Previous page", zh: "上一页", es: "Página anterior" },
+};
+export function t(lang: Language, key: string) {
+  return native[key]?.[lang] ?? translate(lang, key);
+}
+export const nativeMessages = native;

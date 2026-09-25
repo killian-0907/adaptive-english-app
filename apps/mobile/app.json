@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Adaptive English Beta",
+    "slug": "adaptive-english-beta",
+    "version": "0.1.0",
+    "scheme": "adaptiveenglish",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "../../public/icons/app-512.png",
+    "ios": {
+      "bundleIdentifier": "com.killian0907.adaptiveenglish",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow speech recognition for your English practice. Your device's speech service may process audio online.",
+        "NSMicrophoneUsageDescription": "Allow Adaptive English to hear a practice response when you choose Record."
+      }
+    },
+    "android": {
+      "package": "com.killian0907.adaptiveenglish",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "../../public/icons/app-512.png",
+        "backgroundColor": "#eaf2ef"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#eaf2ef",
+          "image": "../../public/icons/app-512.png",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Adaptive English to hear a practice response when you choose Record.",
+          "speechRecognitionPermission": "Allow speech recognition for your English practice. Your device's speech service may process audio online."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "80599b84-99a2-4a4d-920d-d45de2ffdf33"
+      }
+    },
+    "owner": "killian-3034"
+  }
+}

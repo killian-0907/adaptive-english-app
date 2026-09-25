@@ -1,3 +1,4 @@
+import { apiGuard } from "@/server/api-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/server/auth";
 import { createServerUserSupabaseClient } from "@/lib/supabase/server";
@@ -6,8 +7,7 @@ import { APP_VERSION } from "@/lib/pwa";
 import { requestSlot, RateLimitError } from "@/server/services/lifecycle";
 export async function POST(request: NextRequest) {
   const reply = (body: object, status: number) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
-  const origin = request.headers.get("origin");
-  if (!origin || !URL.canParse(origin) || new URL(origin).host !== request.headers.get("host")) return reply({ error: "Invalid request origin." }, 403);
+  const guard=apiGuard(request);if(guard)return guard;
   const user = await getAuthenticatedUser(); if (!user) return reply({ error: "Please sign in again." }, 401);
   try {
     const body = await request.text(); if (body.length > 6000) return reply({ error: "Please check your request." }, 413);

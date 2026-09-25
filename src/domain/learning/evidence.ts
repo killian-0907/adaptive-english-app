@@ -6,7 +6,7 @@ import { scoreLearning } from "./evaluation";
 export function learningEvidence(input: {
   snapshot: Snapshot; task: Task; decision: Decision; scored: ReturnType<typeof scoreLearning>;
   id: string; activityId: string; knowledgeId: string | null; now: string;
-  browserVoice: boolean; voice: boolean; replay: number; transcript: boolean;
+  browserVoice: boolean; nativeVoice?: boolean; voice: boolean; replay: number; transcript: boolean;
   retries: number; elapsedMs: number | null; skip: boolean; evaluationStrategy: string;
 }) {
   const { snapshot: s, task, decision, scored, browserVoice, voice, retries } = input;
@@ -25,7 +25,7 @@ export function learningEvidence(input: {
       sessionState: s.state, misunderstood: errors.includes("task_misunderstanding"),
       firstListen: task.modality === "listening_recognition" && input.replay === 1 && !input.transcript,
       retries, timed: false, skipped: input.skip, evaluationStrategy: input.evaluationStrategy,
-      voiceProvider: browserVoice ? "browser_native" : voice ? "openai" : "typed",
+      voiceProvider: input.nativeVoice ? "native_os" : browserVoice ? "browser_native" : voice ? "openai" : "typed",
       acousticUncertainty: browserVoice, scenarioFamily: task.scenario?.family,
     },
   });

@@ -22,7 +22,14 @@
     "db:status": "supabase status",
     "voice:cleanup": "node --env-file=.env.local --experimental-strip-types scripts/cleanup-worker.ts",
     "voice:worker": "node --env-file=.env.local --experimental-strip-types scripts/cleanup-worker.ts --watch",
-    "qa:adaptive": "node scripts/adaptive-quality.mjs"
+    "qa:adaptive": "node scripts/adaptive-quality.mjs",
+    "mobile:start": "corepack pnpm --dir apps/mobile start",
+    "mobile:android": "corepack pnpm --dir apps/mobile android",
+    "mobile:typecheck": "corepack pnpm --dir apps/mobile typecheck",
+    "mobile:test": "corepack pnpm --dir apps/mobile test",
+    "mobile:lint": "corepack pnpm --dir apps/mobile lint",
+    "mobile:check": "corepack pnpm --dir apps/mobile check",
+    "mobile:export": "corepack pnpm --dir apps/mobile export"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

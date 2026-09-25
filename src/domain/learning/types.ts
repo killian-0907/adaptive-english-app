@@ -13,6 +13,7 @@ export const commandSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("feedback"), activityId: z.uuid(), kind: z.enum(feedbackKinds) }).strict(),
   z.object({ action: z.literal("support"), activityId: z.uuid(), kind: z.enum(["next", "native", "transcript", "replay"]) }).strict(),
   z.object({ action: z.literal("tts"), activityId: z.uuid() }).strict(),
+  z.object({ action: z.literal("native_voice"), activityId: z.uuid(), attemptId: z.uuid(), text: z.string().trim().min(1).max(3000) }).strict(),
   z.object({ action: z.literal("browser_voice"), activityId: z.uuid(), attemptId: z.uuid(), text: z.string().trim().min(1).max(3000) }).strict(),
   z.object({ action: z.literal("answer"), activityId: z.uuid(), text: z.string().max(3000), voiceId: z.uuid().nullable(), skip: z.boolean(), elapsedMs: z.number().int().min(0).max(3600000).nullable() }).strict(),
 ]);

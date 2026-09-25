@@ -1684,6 +1684,25 @@ export type Database = {
         }
         Returns: string
       }
+      record_client_transcript: {
+        Args: {
+          p_activity: string
+          p_attempt: string
+          p_provider: string
+          p_text: string
+          p_user: string
+        }
+        Returns: string
+      }
+      record_native_transcript: {
+        Args: {
+          p_activity: string
+          p_attempt: string
+          p_text: string
+          p_user: string
+        }
+        Returns: string
+      }
       reserve_provider_usage: {
         Args: {
           p_key: string
