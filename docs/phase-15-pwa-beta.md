@@ -29,7 +29,19 @@ Safe-area padding, dynamic viewport height, scroll margins, 16px inputs and non-
 
 ## Verification record
 
-Local checks on 2026-09-26: typecheck passed; lint passed with zero errors and one pre-existing PostCSS warning; 177 unit tests in 13 files passed; 137 database tests in eight files passed; all 32 E2E tests passed; production build passed with 28 routes including the static manifest/worker. After the final activation-time reload guard, all four PWA E2E tests, build, typecheck and lint passed again. Hosted deployment verification is pending the GitHub/Netlify release. Browser-event and platform doubles are confined to tests and do not establish physical-device installation or audible speech.
+Local checks on 2026-09-26: typecheck passed; lint passed with zero errors and one pre-existing PostCSS warning; 177 unit tests in 13 files passed; 137 database tests in eight files passed; all 32 E2E tests passed; production build passed with 28 routes including the static manifest/worker. After the final activation-time reload guard, all four PWA E2E tests, build, typecheck and lint passed again. Application commit `20db3e3` is serving through the existing Netlify pipeline. Its public worker and Settings version both identify that commit.
+
+Hosted verification on 2026-09-26:
+
+- Health returned 200/ready. The standalone manifest, all three manifest icon references, Apple icon, and worker are available; the worker uses no-cache/no-store headers.
+- An admin-confirmed disposable test account authenticated. Hosted onboarding, initial assessment using reading/typed fallback, completion, learning start and response persistence passed. A short-lived single-use confirmation link also authenticated the browser; this is not a real-mailbox delivery test.
+- Eight authenticated pages returned 200: Login, Home, Assessment, Learn, My English, History, Settings and Membership. Anonymous export returned 401. Feedback saved through both the hosted API and mobile UI.
+- Nineteen deployed browser bundles plus the page HTML were checked against actual configured secret values: zero findings. No advertising script references were found. Membership remains unconfigured for payment.
+- The deployed scheduled-function public URL still returns 403 and the unchanged Netlify configuration schedules cleanup at 03:00 UTC. A fresh manual invocation from the Netlify dashboard was not performed: its automatic browser approval check timed out twice. Phase 14's actual scheduled-run verification remains separately documented.
+- Settings and active Learn were checked at an actual 390px width with no horizontal overflow. Settings exposes Beta, the correct build identifier, feedback and the truthful unsupported-install message. Learn has no install CTA.
+- Browser-native Settings playback was invoked with no visible playback error, but audible output is not independently confirmed. The disposable identity and profile were removed through the hosted deletion API, and the temporary encrypted-credential helper was stopped.
+
+The in-app browser does not offer installation here. Manifest/static-worker checks and automated standalone/platform simulations pass; OS-installed launch, standalone auth redirects and downloads are not claimed as real-device successes. Browser-event and platform doubles are confined to tests and do not establish physical-device installation or audible speech.
 
 The available authenticated browser currently exposes only the in-app browser, Netlify and the beta application, with no mailbox session. A deliverable test mailbox has been requested. Public real-mailbox confirmation/recovery delivery is pending; local recovery-token and login tests are separate evidence.
 
