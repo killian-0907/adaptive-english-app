@@ -7,6 +7,8 @@ import { assessmentVoice } from "@/server/services/assessment-voice";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { commandSchema } from "@/domain/learning/types";
 
+import { requireVoiceDelivery } from "@/server/services/delivery";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 function failure(error: unknown) {
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
     if(body.action === "onboarding") await saveOnboarding(user.id,body.data);
     else if(body.action === "answer") await submitAnswer(user.id,body.data);
     else if(body.action === "browser_voice") {
+      await requireVoiceDelivery(user.id);
       const command=commandSchema.parse(body);
       if(command.action!=="browser_voice")throw new AssessmentError("Invalid voice request.");
       const {item}=await ownedActivity(user.id,command.activityId);

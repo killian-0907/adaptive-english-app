@@ -14,7 +14,7 @@ async function fixture(page:Page,method="conversation"){
     db.from("learning_preferences").insert({user_id:user.id,preference_type:"method",target_key:method,strength:2,confidence_level:3,source:"explicit_feedback"}),
     db.from("learning_goals").insert({user_id:user.id,goal_type:"daily_communication"}),
   ]);for(const r of setup)expect(r.error).toBeNull();
-  await page.goto("/login");const form=page.getByRole("heading",{name:"Sign in",exact:true}).locator("..");await form.getByPlaceholder("Email").fill(email);await form.getByPlaceholder("Password").fill(password);await form.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/protected$/);
+  await page.goto("/login");const form=page.getByRole("heading",{name:"Sign in",exact:true}).locator("..");await form.getByPlaceholder("Email").fill(email);await form.getByPlaceholder("Password").fill(password);await form.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/home$/);
   await page.goto("/learn");await page.getByRole("button",{name:"Start learning session",exact:true}).click();await expect(page.getByRole("button",{name:"Play / replay prompt",exact:true})).toBeVisible();
   return {db,user,cleanup:()=>db.auth.admin.deleteUser(user.id)};
 }

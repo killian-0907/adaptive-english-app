@@ -77,7 +77,7 @@ export function planContent(s: Snapshot, decision: Decision): {decision:Decision
   if(!scenario){
     const recent=s.history.slice(-10).map(h=>h.metadata.task.scenario?.family);
     scenario=[...scenarios].sort((a,b)=>{
-      const score=(x:Scenario)=> (x.goals.some(g=>s.goals.includes(g))?3:0)+(x.turns.some(t=>t.function===d.topic)?4:0)-(recent.filter(k=>k===x.key).length*3);
+      const score=(x:Scenario)=> Math.max(0,...x.goals.filter(g=>s.goals.includes(g)).map(g=>(s.goals.length-s.goals.indexOf(g))*3))+(x.turns.some(t=>t.function===d.topic)?4:0)-(recent.filter(k=>k===x.key).length*3);
       return score(b)-score(a);
     })[0];
     index=Math.max(0,scenario.turns.findIndex(t=>t.function===d.topic));

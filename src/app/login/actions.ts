@@ -18,7 +18,7 @@ export async function signInAction(formData: FormData) {
   const supabase = await createServerUserSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  redirect("/protected");
+  redirect("/home");
 }
 
 export async function signUpAction(formData: FormData) {

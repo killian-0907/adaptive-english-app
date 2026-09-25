@@ -12,7 +12,7 @@ test("new learner onboarding, deterministic evidence, resume, completion and sec
   const email=`assessment-${Date.now()}@example.test`;const password="AssessmentTest123!";let userId:string|undefined;
   try{
     await page.goto("/login");
-    const signup=page.getByRole("heading",{name:"Create test account"}).locator("..");
+    const signup=page.getByRole("heading",{name:"Create account"}).locator("..");
     await signup.getByPlaceholder("Email").fill(email);await signup.getByPlaceholder("Password").fill(password);await signup.getByRole("button",{name:"Sign up"}).click();
     await expect(page).toHaveURL(/message=/);
     const users=await admin.auth.admin.listUsers({perPage:1000});userId=users.data.users.find(u=>u.email===email)!.id;

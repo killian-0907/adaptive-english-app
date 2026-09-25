@@ -10,7 +10,7 @@ async function fixture(page:Page){
   const session=await db.from("learning_sessions").insert({user_id:user.id,status:"completed",starting_state_summary:{purpose:"initial_assessment_v1"},session_summary:{complete:true,turns:[]},ending_state_summary:{model:[],support:"native_supported"}});expect(session.error).toBeNull();
   await db.from("profiles").update({onboarding_status:"completed",native_language:"en",interface_language:"en"}).eq("user_id",user.id);
   await db.from("learner_ability_estimates").insert({user_id:user.id,dimension:"vocabulary",estimate_level:0,confidence_level:1});
-  await page.goto("/login");const form=page.getByRole("heading",{name:"Sign in",exact:true}).locator("..");await form.getByPlaceholder("Email").fill(email);await form.getByPlaceholder("Password").fill(password);await form.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/protected$/);
+  await page.goto("/login");const form=page.getByRole("heading",{name:"Sign in",exact:true}).locator("..");await form.getByPlaceholder("Email").fill(email);await form.getByPlaceholder("Password").fill(password);await form.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/home$/);
   await page.goto("/learn");await page.getByRole("button",{name:"Start learning session",exact:true}).click();await expect(page.getByRole("heading",{name:"Make a polite request",exact:true})).toBeVisible();
   return {db,user,cleanup:async()=>{await db.auth.admin.deleteUser(user.id);}};
 }

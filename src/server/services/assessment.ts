@@ -1,4 +1,5 @@
 import "server-only";
+import { voiceDelivery } from "./delivery";
 import { createHash, randomUUID } from "node:crypto";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerUserSupabaseClient } from "@/lib/supabase/server";
@@ -30,7 +31,7 @@ export async function assessmentView(userId: string) {
   const activity = checked(await user.from("activities").select("id,metadata").eq("session_id",sid).eq("sequence_no",state.turns.length).single());
   const previousVoice = checked(await user.from("voice_interactions").select("id,transcript").eq("activity_id",activity.id).eq("interaction_type","stt").eq("processing_status","completed").order("attempt_no",{ascending:false}).limit(1));
   return { onboarding: false as const, complete: false as const, activityId: activity.id, count: state.turns.length, profile,
-    savedVoice: previousVoice[0] ?? null, enhancedAvailable:!!process.env.OPENAI_API_KEY,
+    previousPrompt:state.turns.length?getItem(state.turns.at(-1)!.itemId).tts??undefined:undefined, savedVoice: previousVoice[0] ?? null, ...await voiceDelivery(userId),
     support: languageSupport(state.difficulty), savedSupport: supportSchema.parse((activity.metadata as {support?:unknown}).support ?? {hints:0,replays:0,retries:0,translation:false,transcript:false}), item: { id: item.id, type: item.type, prompt: item.prompt, options: item.options, hasAudio: !!item.tts, speechText:item.tts??undefined, spoken: item.type === "spoken" || item.type === "practical", instruction: item.native[profile.native_language ?? "en"] ?? "Try your best. You can ask for help or skip.", hint: item.hint } };
 }
 export type AssessmentView = Awaited<ReturnType<typeof assessmentView>>;

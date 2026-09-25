@@ -33,7 +33,7 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   else if(repeated.length && previous?.purpose!=="weakness_repair" && !recentTopics.every(t=>t===catalogTopic(repeated[0].knowledge_item_id??""))){topic=catalogTopic(repeated[0].knowledge_item_id??"")??"past_events";purpose="weakness_repair";reasons.push("repeated_communication_relevant_pattern");}
   else if(difficultyState==="too_difficult" && previous){topic=previous.topic;purpose="weakness_repair";reasons.push("repeated_struggle");}
   else if(previous && (last?.metadata.quality??0)>=3 && !last?.metadata.support && previous.purpose!=="transfer"){topic=previous.topic;purpose="transfer";reasons.push("check_reuse_in_new_context");}
-  else { const goalTopic=s.goals.includes("work")?"meeting_times":s.goals.includes("school")?"clarification":"polite_requests"; topic=recentTopics.includes(goalTopic)?topics.find(t=>!recentTopics.includes(t))??topics[current.length%topics.length]:goalTopic;purpose=current.length===0?"communication":"progression";reasons.push("goal_relevance_and_breadth"); }
+  else { const goalTopic=s.goals[0]==="work"?"meeting_times":s.goals[0]==="school"?"clarification":"polite_requests"; topic=recentTopics.includes(goalTopic)?topics.find(t=>!recentTopics.includes(t))??topics[current.length%topics.length]:goalTopic;purpose=current.length===0?"communication":"progression";reasons.push("goal_relevance_and_breadth"); }
   if(!objectives[topic]) topic="polite_requests";
   const candidates: Method[]=purpose==="review"?(due[0]?.modality.endsWith("recognition")?["sentence_building","speaking","review"]:["review","sentence_building","listening"]):purpose==="weakness_repair"?["sentence_building","grammar_explanation","vocabulary_context","speaking"]:purpose==="transfer"?["transfer","role_play","guided_writing"]:purpose==="consolidation"?["vocabulary_context","sentence_building","review"]:["vocabulary_context","conversation","role_play","listening","speaking","guided_writing"];
   const preferenceKey: Record<Method,string>={conversation:"conversation",role_play:"conversation",listening:"listening",speaking:"conversation",sentence_building:"writing",vocabulary_context:"examples",grammar_explanation:"examples",guided_writing:"writing",review:"repetition",transfer:"conversation"};
@@ -58,6 +58,9 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   else if(difficultyState==="too_easy"&&!states.includes(s.state)) difficulty++;
   else if(s.state==="bored" && current.length>=2) difficulty++;
   if(states.includes(s.state)) difficulty=Math.min(difficulty,previous?.difficulty??difficulty);
+  const pace=s.preferences.find(p=>p.preference_type==="pace")?.value_text;
+  if(pace==="gentle")difficulty=Math.min(difficulty,Math.max(0,(ability?.estimate_level??0)-1));
+  if(pace==="brisk"&&(ability?.confidence_level??0)>=2&&["comfortable","too_easy"].includes(difficultyState)&&!states.includes(s.state))difficulty=Math.max(difficulty,Math.min(5,(ability?.estimate_level??0)+1));
   difficulty=clamp(difficulty,0,5);
   const independent=s.evidence.slice(-6).filter(e=>e.response_quality!==null&&e.response_quality>=3&&e.support_level===0&&!e.metadata.misunderstood);
   const listening=s.abilities.find(a=>a.dimension==="listening");
@@ -68,7 +71,7 @@ export function decide(s: Snapshot, now=new Date()): Decision {
   // Change either language exposure or task difficulty upwards on a turn, not both.
   if(previous && difficulty>previous.difficulty) exposure=Math.min(exposure,previous.exposure);
   const correctionPreference=s.preferences.find(p=>p.preference_type==="correction")?.value_text;
-  const correction:Decision["correction"]=s.state==="frustrated"||correctionPreference==="gentle"||feedback==="less_correction"?"delayed":["conversation","role_play","transfer"].includes(method)?"delayed":difficultyState==="too_difficult"?"model_response":correctionPreference==="immediate"?"immediate":"hint_first";
+  const correction:Decision["correction"]=correctionPreference==="minimal"?"move_on":correctionPreference==="after_turn"?"delayed":s.state==="frustrated"||correctionPreference==="gentle"||feedback==="less_correction"?"delayed":["conversation","role_play","transfer"].includes(method)?"delayed":difficultyState==="too_difficult"?"model_response":correctionPreference==="immediate"?"immediate":"hint_first";
   return {objective:objectives[topic],targetSkill,topic,purpose,method,scenario:s.goals.includes("work")?"at_work":purpose==="transfer"?"new_everyday_context":"daily_life",difficulty,exposure,nativeSupport:5-exposure,correction,support:{initial:feedback==="cannot_understand"?5:feedback==="cannot_retrieve"?4:states.includes(s.state)?3:0,max:6},collect:[targetSkill,"independence",purpose==="transfer"?"transfer":"task_performance","instruction_understanding"],triggers:["two_struggles","two_independent_successes","explicit_feedback"],returnRule:"After at most two focused activities, try the same objective in a new realistic context.",reasons,version:VERSION,listening:{speed:exposure<=2?0.8:exposure<=3?0.9:1,transcript:exposure===1,replay:true,turns:difficulty>=3&&!states.includes(s.state)?2:1},speaking:{words:difficulty===0?1:states.includes(s.state)?5:5+difficulty*8,preparationSeconds:exposure<=2?20:5,frame:exposure<=2||states.includes(s.state),followUp:difficulty>=3&&!states.includes(s.state)},difficultyState,feedbackDue:current.length>0&&(current.length%4===0||difficultyState==="too_difficult"||previous?.method!==method)};
 }
 const content: Record<string,{sentences:string[]; zh:string; es:string; cue:string; rule:string}>={
@@ -99,7 +102,7 @@ export function supportText(task:Task,level:number,language:string){return ["Try
 export function correctionText(d:Decision,task:Task,quality:number|null,errors:string[],support:number){
   if(quality===null)return "This response was not scored. We can try another way.";
   if(quality>=3)return support>0?"You completed this with help. We will try using it independently later.":d.purpose==="transfer"?"You used the idea in a new context. Let's keep practising.":"Your message worked. Let's try another context.";
-  if(d.correction==="delayed" && quality>=2 && !errors.length)return "Your meaning came through. Keep the conversation going.";
+  if((d.correction==="delayed"||d.correction==="move_on") && quality>=2 && !errors.length)return "Your meaning came through. Keep the conversation going.";
   if(d.correction==="hint_first")return `Try this cue next time: ${task.explanation}`;
   return `A useful model: ${task.model} ${task.explanation}`;
 }

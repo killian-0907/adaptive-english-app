@@ -27,8 +27,8 @@ test("sign up, profile trigger, sign out, protected route, and sign in work", as
     await page.goto("/protected");
     await expect(page).toHaveURL(/\/login\?next=%2Fprotected|\/login\?next=\/protected/);
 
-    await page.getByRole("heading", { name: "Authentication test" }).waitFor();
-    const signUpForm = page.getByRole("heading", { name: "Create test account" }).locator("..");
+    await page.getByRole("heading", { name: "Welcome to Adaptive English" }).waitFor();
+    const signUpForm = page.getByRole("heading", { name: "Create account" }).locator("..");
     await signUpForm.getByPlaceholder("Email").fill(email);
     await signUpForm.getByPlaceholder("Password").fill(password);
     await signUpForm.getByRole("button", { name: "Sign up" }).click();
@@ -51,7 +51,8 @@ test("sign up, profile trigger, sign out, protected route, and sign in work", as
 
     // Local Supabase has email confirmations disabled, so sign-up creates a session.
     await page.goto("/protected");
-    await expect(page.getByRole("heading", { name: "Protected route" })).toBeVisible();
+    await expect(page).toHaveURL(/\/assessment$/);
+    await page.goto("/settings");
     await expect(page.getByText(email)).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();
@@ -65,7 +66,8 @@ test("sign up, profile trigger, sign out, protected route, and sign in work", as
     await signInForm.getByPlaceholder("Password").fill(password);
     await signInForm.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page).toHaveURL(/\/protected$/);
+    await expect(page).toHaveURL(/\/assessment$/);
+    await page.goto("/settings");
     await expect(page.getByText(email)).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();

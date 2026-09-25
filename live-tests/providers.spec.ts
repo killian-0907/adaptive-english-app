@@ -27,7 +27,7 @@ test("real server-side TTS, STT, evaluator, evidence and request deduplication",
     await form.getByPlaceholder("Email").fill(email);
     await form.getByPlaceholder("Password").fill(password);
     await form.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page).toHaveURL(/\/protected$/);
+    await expect(page).toHaveURL(/\/assessment$/);
     let view = await (await post({ action: "onboarding", data: { nativeLanguage: "en", interfaceLanguage: "en", goals: ["daily_communication"], experience: "none", liked: [], disliked: [], correction: "gentle", pace: null } })).json();
     const speech = await post({ action: "tts", activityId: view.activityId });
     expect(speech.headers()["content-type"]).toContain("audio/mpeg");

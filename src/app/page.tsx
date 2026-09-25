@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getAuthenticatedUser } from "@/server/auth";
 
-export default function HomePage() {
+export default async function HomePage() {
+  if(await getAuthenticatedUser())redirect("/home");
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-6 p-8">
       <h1 className="text-3xl font-semibold">Adaptive English</h1>

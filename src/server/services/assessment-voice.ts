@@ -1,10 +1,12 @@
 import "server-only";
+import { requireVoiceDelivery } from "./delivery";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { ownedActivity, AssessmentError, account } from "./assessment";
 import { OpenAIAssessmentProvider } from "./assessment-provider";
 import { voiceObservations } from "@/domain/voice/observations";
 
 export async function assessmentVoice(userId: string, activityId: string, audio?: File, resolveActivity = ownedActivity) {
+  await requireVoiceDelivery(userId);
   const {activity,item} = await resolveActivity(userId,activityId);
   if(activity.status !== "active") throw new AssessmentError("This activity is no longer active.");
   const db = createAdminSupabaseClient();

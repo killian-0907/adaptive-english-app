@@ -1,4 +1,5 @@
 import "server-only";
+import { voiceDelivery, requireVoiceDelivery } from "./delivery";
 import { createHash, randomUUID } from "node:crypto";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { evaluationSchema } from "@/domain/assessment/contracts";
@@ -19,7 +20,8 @@ function checked<T>(r:{data:T;error:unknown}):NonNullable<T>{if(r.error||r.data=
 const json=(value:unknown)=>value as Json;
 async function snapshot(userId:string,sessionId:string):Promise<Snapshot>{
   const raw=checked(await createAdminSupabaseClient().rpc("learning_snapshot",{p_user:userId})) as unknown as Snapshot & {states:{session_id:string;state_type:string}[]};
-  return {...raw,sessionId,state:raw.states.find(s=>s.session_id===sessionId)?.state_type??"normal", evidence:raw.evidence.map(e=>evidenceSchema.parse({id:e.id,session_id:e.session_id,activity_id:e.activity_id,target_skill:e.target_skill,knowledge_item_id:e.knowledge_item_id,modality:e.modality,source:e.source,evidence_kind:e.evidence_kind,result:e.result,response_quality:e.response_quality,support_level:e.support_level,evaluator_confidence_level:e.evaluator_confidence_level,transfer_success:e.transfer_success,voice_uncertainty:e.voice_uncertainty??false,response_time_ms:e.response_time_ms,dedupe_key:e.dedupe_key,occurred_at:e.occurred_at,processor_status:e.processor_status,metadata:e.metadata}))};
+  const goals=checked(await createAdminSupabaseClient().from("learning_goals").select("goal_type").eq("user_id",userId).eq("is_active",true).order("priority",{ascending:false}).order("created_at"));
+  return {...raw,goals:goals.map(g=>g.goal_type),sessionId,state:raw.states.find(s=>s.session_id===sessionId)?.state_type??"normal", evidence:raw.evidence.map(e=>evidenceSchema.parse({id:e.id,session_id:e.session_id,activity_id:e.activity_id,target_skill:e.target_skill,knowledge_item_id:e.knowledge_item_id,modality:e.modality,source:e.source,evidence_kind:e.evidence_kind,result:e.result,response_quality:e.response_quality,support_level:e.support_level,evaluator_confidence_level:e.evaluator_confidence_level,transfer_success:e.transfer_success,voice_uncertainty:e.voice_uncertainty??false,response_time_ms:e.response_time_ms,dedupe_key:e.dedupe_key,occurred_at:e.occurred_at,processor_status:e.processor_status,metadata:e.metadata}))};
 }
 async function owned(userId:string,id:string){
   return checked(await createAdminSupabaseClient().from("activities").select("*").eq("user_id",userId).eq("id",id).eq("activity_type","normal_learning").single());
@@ -50,7 +52,7 @@ function summary(history:History[]):Summary{
   const done=history.filter(h=>h.status==="completed");
   return {completedScenarios:[...new Set(done.filter(h=>{const p=h.metadata.task.scenario;return p&&p.turn===p.total-1&&(h.metadata.quality??0)>=3&&Array.from({length:p.total},(_,i)=>i).every(i=>done.some(t=>t.metadata.task.scenario?.run===p.run&&t.metadata.task.scenario.turn===i&&(t.metadata.quality??0)>=3));}).map(h=>h.metadata.task.scenario!.title))],practiced:[...new Set(done.map(h=>h.metadata.decision.objective))],worked:[...new Set(done.filter(h=>(h.metadata.quality??0)>=3&&!h.metadata.support).map(h=>h.metadata.decision.objective))],needsPractice:[...new Set(done.filter(h=>h.metadata.quality!==null&&((h.metadata.quality??4)<3||h.metadata.support)).map(h=>h.metadata.decision.objective))],expressions:[...new Set(done.map(h=>h.metadata.task.model))].slice(-2),next:done.at(-1)?.metadata.decision.returnRule??"Start with a short, useful everyday exchange."};
 }
-export type LearningView={kind:"start"|"assessment_required"|"activity"|"summary";sessionId?:string;activityId?:string;objective?:string;method?:string;prompt?:string;options?:string[];spoken?:boolean;audio?:boolean;support?:number;supportText?:string;nativeHelp?:string;transcript?:string;correction?:string;explanation?:string;speed?:number;words?:number;preparation?:number;frame?:string;feedbackDue?:boolean;summary?:Summary;speechText?:string;enhancedAvailable?:boolean;scenario?:Task["scenario"];savedVoice?:{id:string;transcript:string|null}|null};
+export type LearningView={kind:"start"|"assessment_required"|"activity"|"summary";sessionId?:string;activityId?:string;objective?:string;method?:string;prompt?:string;options?:string[];spoken?:boolean;audio?:boolean;support?:number;supportText?:string;nativeHelp?:string;transcript?:string;correction?:string;explanation?:string;speed?:number;words?:number;preparation?:number;frame?:string;feedbackDue?:boolean;summary?:Summary;voiceAllowed?:boolean;previousPrompt?:string;speechText?:string;enhancedAvailable?:boolean;scenario?:Task["scenario"];savedVoice?:{id:string;transcript:string|null}|null};
 export async function learningView(userId:string,endedSession?:string):Promise<LearningView>{
   const db=createAdminSupabaseClient();
   const assessed=checked(await db.from("learning_sessions").select("id").eq("user_id",userId).eq("status","completed").contains("starting_state_summary",{purpose:"initial_assessment_v1"}).limit(1));
@@ -63,7 +65,7 @@ export async function learningView(userId:string,endedSession?:string):Promise<L
   const d=m.decision; const task=m.task;const support=m.support??0;
   const receipts=checked(await db.from("voice_interactions").select("id,transcript").eq("user_id",userId).eq("activity_id",id).eq("interaction_type","stt").eq("processing_status","completed").order("attempt_no",{ascending:false}).limit(1));
   const latest=s.history.filter(h=>h.session_id===session.id&&h.status==="completed").at(-1);
-  return {kind:"activity",speechText:task.audio?task.context:undefined,enhancedAvailable:!!process.env.OPENAI_API_KEY,scenario:task.scenario,sessionId:session.id,activityId:id,objective:d.objective,method:d.method.replaceAll("_"," "),prompt:task.prompt,options:task.options,spoken:task.spoken,audio:task.audio,support,supportText:supportText(task,support,s.language),nativeHelp:d.exposure<=2||support>=5?task.native[s.language]??task.native.en:undefined,transcript:m.transcript?task.context:undefined,correction:latest?.metadata.correction,explanation:d.method==="grammar_explanation"?task.explanation:undefined,speed:d.listening.speed,words:d.speaking.words,preparation:d.speaking.preparationSeconds,frame:d.speaking.frame&&support>=4?`${task.model.split(" ")[0]} …`:undefined,feedbackDue:d.feedbackDue,savedVoice:receipts[0]??null};
+  return {kind:"activity",previousPrompt:latest?.metadata.task.audio?latest.metadata.task.context:undefined,speechText:task.audio?task.context:undefined,...await voiceDelivery(userId),scenario:task.scenario,sessionId:session.id,activityId:id,objective:d.objective,method:d.method.replaceAll("_"," "),prompt:task.prompt,options:task.options,spoken:task.spoken,audio:task.audio,support,supportText:supportText(task,support,s.language),nativeHelp:d.exposure<=2||support>=5?task.native[s.language]??task.native.en:undefined,transcript:m.transcript?task.context:undefined,correction:latest?.metadata.correction,explanation:d.method==="grammar_explanation"?task.explanation:undefined,speed:d.listening.speed,words:d.speaking.words,preparation:d.speaking.preparationSeconds,frame:d.speaking.frame&&support>=4?`${task.model.split(" ")[0]} …`:undefined,feedbackDue:d.feedbackDue,savedVoice:receipts[0]??null};
 }
 async function answer(userId:string,command:Extract<Command,{action:"answer"}>){
   const db=createAdminSupabaseClient();const activity=await owned(userId,command.activityId);if(activity.status==="completed")return;
@@ -103,9 +105,15 @@ async function answer(userId:string,command:Extract<Command,{action:"answer"}>){
 export async function learningCommand(userId:string,command:Command){
   const db=createAdminSupabaseClient();
   if(command.action==="start")checked(await db.rpc("start_learning",{p_user:userId}));
-  else if(command.action==="browser_voice"){const voiceId=checked(await db.rpc("record_browser_transcript",{p_user:userId,p_activity:command.activityId,p_attempt:command.attemptId,p_text:command.text}));return {voiceId,transcript:command.text};}
+  else if(command.action==="browser_voice"){await requireVoiceDelivery(userId);const voiceId=checked(await db.rpc("record_browser_transcript",{p_user:userId,p_activity:command.activityId,p_attempt:command.attemptId,p_text:command.text}));return {voiceId,transcript:command.text};}
   else if(command.action==="answer")await answer(userId,command);
   else if(command.action==="end"){checked(await db.rpc("end_learning",{p_user:userId,p_session:command.sessionId}).then(r=>({...r,data:true})));return learningView(userId,command.sessionId);}
   else if(command.action==="support"||command.action==="feedback")checked(await db.rpc("control_learning",{p_user:userId,p_activity:command.activityId,p_action:command.action,p_value:command.kind}).then(r=>({...r,data:true})));
   return learningView(userId);
+}
+
+export async function learningPreview(userId:string){
+  const sessions=checked(await createAdminSupabaseClient().from("learning_sessions").select("id").eq("user_id",userId).contains("starting_state_summary",{purpose:"normal_learning_v1"}).order("started_at",{ascending:false}).limit(1));
+  const s=await snapshot(userId,sessions[0]?.id??"00000000-0000-4000-8000-000000000000");
+  const active=s.history.find(h=>h.session_id===s.sessionId&&h.status==="active");return {objective:active?.metadata.decision.objective??decide(s).objective};
 }

@@ -21,7 +21,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims?.sub);
 
-  if (request.nextUrl.pathname.startsWith("/protected") && !isAuthenticated) {
+  if (["/protected","/home","/my-english","/history","/settings","/membership","/learn","/assessment","/onboarding"].some(path=>request.nextUrl.pathname===path||request.nextUrl.pathname.startsWith(path+"/")) && !isAuthenticated) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", request.nextUrl.pathname);

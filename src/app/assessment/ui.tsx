@@ -1,9 +1,10 @@
 "use client";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { methods, type Support } from "@/domain/assessment/contracts";
 import type { AssessmentView } from "@/server/services/assessment";
 import { VoiceTools } from "../learn/voice-tools";
+import { useVoicePreferences } from "@/lib/voice/preferences";
 const subscribeHydration=()=>()=>{};
 
 async function api(body?: object | FormData) {
@@ -40,14 +41,16 @@ function Onboarding({busy,onSave}:{busy:boolean;onSave:(data:object)=>void}) {
 type ActiveView = Extract<AssessmentView,{complete:false}>;
 function Activity({view,busy,onAnswer}:{view:ActiveView;busy:boolean;onAnswer:(data:object)=>void}) {
   const [text,setText]=useState("");const [support,setSupport]=useState<Support>(view.savedSupport);const [voiceId,setVoiceId]=useState<string|null>(view.savedVoice?.id ?? null);const [recognized,setRecognized]=useState(view.savedVoice?.transcript ?? "");const [revealed,setRevealed]=useState(!!view.savedVoice);const [promptText,setPromptText]=useState("");const [error,setError]=useState("");const [fallback,setFallback]=useState(!view.savedVoice?.id);
+  const voicePreferences=useVoicePreferences();const autoTranscript=useRef(false);
+  useEffect(()=>{if(voicePreferences.transcript==="automatic"&&view.item.hasAudio&&!autoTranscript.current){autoTranscript.current=true;void api({action:"transcript",activityId:view.activityId}).then(r=>r.json()).then(data=>{setPromptText(data.text);setSupport(s=>({...s,transcript:true}));}).catch(()=>setError("Could not reveal the prompt. Please try Read prompt instead."));}},[voicePreferences.transcript,view.item.hasAudio,view.activityId]);
   const lang=view.profile.interface_language;const t=(en:string,zh:string,es:string)=>lang==="zh"?zh:lang==="es"?es:en;
   async function requestSupport(kind:string){try{setSupport(await(await api({action:"support",activityId:view.activityId,kind})).json());}catch(e){setError((e as Error).message);}}
   async function voiceRequest(data:object|FormData){if(data instanceof FormData){data.set("activityId",view.activityId);return api(data);}return api({...data,activityId:view.activityId});}
   async function revealPrompt(){try{const data=await (await api({action:"transcript",activityId:view.activityId})).json();setPromptText(data.text);setSupport(s=>({...s,transcript:true}));}catch(e){setError((e as Error).message);}}
   function submit(skip=false,fatigue=false,dontKnow=false){onAnswer({activityId:view.activityId,text,voiceId:fallback?null:voiceId,skip,fatigue,dontKnow,support});}
   return <section className="assessment-card"><p className="eyebrow">02 · {t("Finding your starting point","寻找适合你的起点","Tu punto de partida")}</p><p role="status">{view.count} {t("activities saved · up to 14 brief activities","项已保存 · 最多 14 个简短活动","actividades guardadas · hasta 14 actividades breves")}</p><progress value={view.count} max={14} aria-label="Assessment progress"/>
-    <h1>{view.item.prompt}</h1>{(view.support==="native_supported" || support.translation) && <p className="support">{view.item.instruction}</p>}
-    {(view.item.hasAudio||view.item.spoken)&&<VoiceTools speechText={view.item.speechText} spoken={view.item.spoken} speed={view.support==="native_supported"?.8:1} enhancedAvailable={view.enhancedAvailable} enhancedRecordsReplay={false} request={voiceRequest} played={()=>requestSupport("replays")} confirmed={(id,value)=>{setVoiceId(id);setRecognized(value);setFallback(false);setRevealed(true);}}/>}
+    {voicePreferences.transcript==="after_attempt"&&view.previousPrompt&&<p className="support">Previous prompt: {view.previousPrompt}</p>}<h1>{view.item.prompt}</h1>{(view.support==="native_supported" || support.translation) && <p className="support">{view.item.instruction}</p>}
+    {view.voiceAllowed&&(view.item.hasAudio||view.item.spoken)&&<VoiceTools speechText={view.item.speechText} spoken={view.item.spoken} speed={view.support==="native_supported"?.8:1} enhancedAvailable={view.enhancedAvailable} enhancedRecordsReplay={false} request={voiceRequest} played={()=>requestSupport("replays")} confirmed={(id,value)=>{setVoiceId(id);setRecognized(value);setFallback(false);setRevealed(true);}}/>}
     {error&&<div role="alert" className="error">{error}</div>}
     {view.item.spoken&&<><button onClick={()=>{setFallback(true);setVoiceId(null);}}>Type instead</button>{revealed&&<p>{recognized}</p>}</>}
     {view.item.options.length ? <fieldset><legend>{t("Choose an answer","选择答案","Elige una respuesta")}</legend>{view.item.options.map(option=><label className="option" key={option}><input type="radio" name="answer" value={option} checked={text===option} onChange={()=>setText(option)}/>{option}</label>)}</fieldset> : fallback && <label>{t("Your response","你的回答","Tu respuesta")}<textarea value={text} maxLength={3000} onChange={e=>setText(e.target.value)} rows={3}/></label>}

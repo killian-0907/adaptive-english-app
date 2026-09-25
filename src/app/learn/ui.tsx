@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { LearningView } from "@/server/services/learning";
 import { VoiceTools } from "./voice-tools";
+import { useVoicePreferences } from "@/lib/voice/preferences";
 const subscribe=()=>()=>{};
 async function api(body?:object|FormData){const response=await fetch("/api/learning",body?{method:"POST",headers:body instanceof FormData?{}:{"Content-Type":"application/json"},body:body instanceof FormData?body:JSON.stringify(body)}:{cache:"no-store"});if(!response.ok)throw new Error((await response.json()).error??"Please try again.");return response;}
 export function LearningClient({initial}:{initial:LearningView}){
@@ -16,6 +17,8 @@ export function LearningClient({initial}:{initial:LearningView}){
 }
 function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promise<void>}){
   const [text,setText]=useState("");const [voice,setVoice]=useState(view.savedVoice?.id??null);const [transcript,setTranscript]=useState(view.savedVoice?.transcript??"");const [showText,setShowText]=useState(false);
+  const preferences=useVoicePreferences();const revealedAutomatically=useRef(false);
+  useEffect(()=>{if(preferences.transcript==="automatic"&&view.audio&&!view.transcript&&!revealedAutomatically.current){revealedAutomatically.current=true;void action({action:"support",activityId:view.activityId,kind:"transcript"});}},[preferences.transcript,view.audio,view.transcript,view.activityId,action]);
   const started=useRef<number|null>(null);useEffect(()=>{started.current=Date.now();},[]);
   async function voiceRequest(data:object|FormData){if(data instanceof FormData){data.set("activityId",view.activityId!);return api(data);}return api({...data,activityId:view.activityId});}
   const feedback=(kind:string)=>action({action:"feedback",activityId:view.activityId,kind});
@@ -23,9 +26,9 @@ function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promis
   return <section className="assessment-card">
     <p className="eyebrow">{view.method}</p><h1>{view.objective}</h1>
     {view.correction&&<div role="status" className="support">{view.correction}</div>}
-    <h2>{view.prompt}</h2>{view.nativeHelp&&<p className="support">{view.nativeHelp}</p>}{view.explanation&&<p>{view.explanation}</p>}
+    {preferences.transcript==="after_attempt"&&view.previousPrompt&&<p className="support">Previous prompt: {view.previousPrompt}</p>}<h2>{view.prompt}</h2>{view.nativeHelp&&<p className="support">{view.nativeHelp}</p>}{view.explanation&&<p>{view.explanation}</p>}
     <fieldset  className="assessment-stage">
-      {(view.audio||view.spoken)&&<VoiceTools speechText={view.speechText} spoken={!!view.spoken} speed={view.speed??1} enhancedAvailable={!!view.enhancedAvailable} request={voiceRequest} played={()=>help("replay")} confirmed={(id,value)=>{setVoice(id);setTranscript(value);setText("");}}/>}
+      {view.voiceAllowed&&(view.audio||view.spoken)&&<VoiceTools speechText={view.speechText} spoken={!!view.spoken} speed={view.speed??1} enhancedAvailable={!!view.enhancedAvailable} request={voiceRequest} played={()=>help("replay")} confirmed={(id,value)=>{setVoice(id);setTranscript(value);setText("");}}/>}
       {view.audio&&<><button onClick={()=>help("transcript")}>Read instead</button>{view.transcript&&<p>{view.transcript}</p>}</>}
       {view.spoken&&<><p>Take about {view.preparation} seconds to prepare. Aim for {view.words} word{view.words===1?"":"s"}; a shorter clear response is welcome.</p>{view.frame&&<p>Optional frame: {view.frame}</p>}<p>You may record or type. Typed responses count as writing practice.</p></>}
       {!!view.options?.length?<fieldset><legend>Choose an answer</legend>{view.options.map(option=><label className="option" key={option}><input type="radio" name="learning-answer" checked={text===option} onChange={()=>setText(option)}/>{option}</label>)}</fieldset>:<label>Your response<textarea rows={3} maxLength={3000} value={text} onChange={e=>{setText(e.target.value);setVoice(null);}}/></label>}

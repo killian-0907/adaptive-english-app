@@ -6,6 +6,7 @@ export const voiceSettingsSchema = z.object({
   rate: z.number().min(0.7).max(1.25).default(1),
   autoplay: z.boolean().default(false),
   enhanced: z.boolean().default(false),
+  transcript: z.enum(["on_request","after_attempt","automatic"]).default("on_request"),
 });
 export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 export const defaultVoiceSettings = voiceSettingsSchema.parse({});

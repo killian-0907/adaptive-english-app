@@ -1,4 +1,5 @@
 import "server-only";
+import { subscriptionActive } from "@/domain/product/commercial";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export async function loadEntitlementInputs(userId: string, now = new Date()) {
@@ -11,13 +12,13 @@ export async function loadEntitlementInputs(userId: string, now = new Date()) {
 
   const { data: currentSubscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .select("plan_id")
+    .select("plan_id,status,started_at,ends_at")
     .eq("user_id", userId)
     .eq("is_current", true)
     .maybeSingle();
   if (subscriptionError) throw subscriptionError;
 
-  let planId = currentSubscription?.plan_id as string | undefined;
+  let planId = subscriptionActive(currentSubscription,now) ? currentSubscription?.plan_id : undefined;
   if (!planId) {
     const { data: freePlan, error: freePlanError } = await supabase
       .from("plans")

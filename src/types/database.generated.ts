@@ -1581,6 +1581,10 @@ export type Database = {
         Args: { p_data: Json; p_user: string }
         Returns: undefined
       }
+      save_product_settings: {
+        Args: { p_data: Json; p_user: string }
+        Returns: undefined
+      }
       start_initial_assessment: { Args: { p_user: string }; Returns: string }
       start_learning: { Args: { p_user: string }; Returns: string }
     }

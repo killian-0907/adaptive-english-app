@@ -1,6 +1,6 @@
-# Adaptive English — Phase 10
+# Adaptive English — Phase 11
 
-Phase 10 adds free browser voice and bounded immersive scenarios on top of the adaptive learning loop: teaching decisions, normal sessions, validated evidence, conservative model updates and retry-safe transactional persistence. Complete `/assessment`, then start or resume `/learn`. See [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
+Phase 11 adds the signed-in learner shell: Home, My English, session History, editable Settings and a Membership preview. Complete `/assessment`, then use `/home` to start or resume learning. See [Phase 11 behavior, boundaries and limitations](docs/phase-11-product-shell.md), [Phase 9 architecture and operation](docs/phase-9.md) and [Phase 8 assessment](docs/phase-8.md).
 
 The foundation boundaries below remain in effect; the assessment-specific processor is documented separately.
 
@@ -19,7 +19,7 @@ This repository preserves the secure foundation approved for the adaptive Englis
 - Supabase generated-type workflow
 - Vitest and Playwright foundations
 
-Payments, ad providers, final dashboard, progress charts and a full design system remain deferred. The teaching engine is deterministic; paid voice and open-response evaluation remain behind the existing provider boundary.
+Payments, ad providers, advanced progress charts and a full design system remain deferred. The teaching engine is deterministic; paid voice and open-response evaluation remain behind the existing provider boundary.
 
 ## Prerequisites
 

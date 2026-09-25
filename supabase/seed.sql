@@ -1,12 +1,14 @@
 -- Commercial/product scaffolding only. These are deliberately non-final,
 -- harmless defaults and may change when monetization is actually designed.
-insert into public.plans (plan_key, display_name, description, is_active, sort_order)
-values ('free', 'Free', 'Default MVP plan; commercial limits are not finalized.', true, 0)
+insert into public.plans (plan_key, display_name, description, is_active, sort_order, metadata)
+values ('free', 'Free', 'Adaptive practice with browser voice, core scenarios and basic progress.', true, 0,
+  '{"features":[{"label":"Adaptive learning","available":true},{"label":"Browser voice where supported","available":true},{"label":"Core scenarios and progress","available":true},{"label":"Ad placements outside learning","available":true}]}')
 on conflict (plan_key) do update set
   display_name = excluded.display_name,
   description = excluded.description,
   is_active = excluded.is_active,
-  sort_order = excluded.sort_order;
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata;
 
 insert into public.entitlement_definitions (entitlement_key, description, value_type, default_value)
 values
@@ -39,6 +41,12 @@ from public.plans p
 cross join public.entitlement_definitions e
 where p.plan_key = 'free'
 on conflict (plan_id, entitlement_definition_id) do update set value = excluded.value;
+
+-- Seed runs after migrations on a fresh stack, when definitions first exist.
+insert into public.plan_entitlements(plan_id,entitlement_definition_id,value)
+select p.id,e.id,case when e.entitlement_key='ads_enabled' then 'false'::jsonb when e.value_type='boolean' then 'true'::jsonb else e.default_value end
+from public.plans p cross join public.entitlement_definitions e where p.plan_key='membership_preview'
+on conflict do nothing;
 
 insert into public.ad_placement_configs (surface_key, enabled, protected_surface, configuration)
 values
