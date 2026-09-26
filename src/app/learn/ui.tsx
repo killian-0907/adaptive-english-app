@@ -21,6 +21,14 @@ export function LearningClient({initial}:{initial:LearningView}){const t=useT();
     </fieldset><footer>{t("ui.090")}</footer></main>;
 }
 function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promise<void>}){const t=useT();
+  const feedbackRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    // A new activity replaces a form lower down the page. Bring its saved
+    // response feedback into view before the learner tackles the next prompt.
+    if(!view.correction)return;
+    feedbackRef.current?.focus({preventScroll:true});
+    feedbackRef.current?.scrollIntoView({block:"start",behavior:"instant"});
+  },[view.activityId,view.correction]);
   const [text,setText]=useDraft(view.activityId);const [voice,setVoice]=useState(view.savedVoice?.id??null);const [transcript,setTranscript]=useState(view.savedVoice?.transcript??"");const [showText,setShowText]=useState(false);
   const preferences=useVoicePreferences();const revealedAutomatically=useRef(false);
   useEffect(()=>{if(preferences.transcript==="automatic"&&view.audio&&!view.transcript&&!revealedAutomatically.current){revealedAutomatically.current=true;void action({action:"support",activityId:view.activityId,kind:"transcript"});}},[preferences.transcript,view.audio,view.transcript,view.activityId,action]);
@@ -30,7 +38,7 @@ function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promis
   const help=(kind:string)=>action({action:"support",activityId:view.activityId,kind});
   return <section className="assessment-card">
     <p className="eyebrow">{t(methodLabels[view.method?.replaceAll(" ","_") as keyof typeof methodLabels]??view.method)}</p><h1 lang="en">{view.objective}</h1>
-    {view.correction&&<div role="status" className="support">{t(view.correction)}</div>}
+    {view.correction&&<div ref={feedbackRef} tabIndex={-1} role="status" className="support" style={{scrollMarginBlockStart:"1rem"}}>{t(view.correction)}</div>}
     {preferences.transcript==="after_attempt"&&view.previousPrompt&&<p className="support">{t("ui.041")} {view.previousPrompt}</p>}<h2 lang="en">{view.prompt}</h2>{view.nativeHelp&&<p className="support">{view.nativeHelp}</p>}{view.explanation&&<p>{view.explanation}</p>}
     <fieldset  className="assessment-stage">
       {view.voiceAllowed&&(view.audio||view.spoken)&&<VoiceTools speechText={view.speechText} spoken={!!view.spoken} speed={view.speed??1} enhancedAvailable={!!view.enhancedAvailable} request={voiceRequest} played={()=>help("replay")} confirmed={(id,value)=>{setVoice(id);setTranscript(value);setText("");}}/>}
