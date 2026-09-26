@@ -13,22 +13,34 @@ async function api(body?:object|FormData){const response=await fetch("/api/learn
 export function LearningClient({initial}:{initial:LearningView}){const t=useT();
   const [view,setView]=useState(initial);const [busy,setBusy]=useState(false);const [error,setError]=useState("");const ready=useSyncExternalStore(subscribe,()=>true,()=>false);
   const actionLock=useRef(false);
-  async function action(data?:object){if(actionLock.current)return;actionLock.current=true;setBusy(true);setError("");try{setView(await (await api(data)).json());}catch(e){setError(friendlyError(e));}finally{actionLock.current=false;setBusy(false);}}
+  const [feedback,setFeedback]=useState<string|null>(null);
+  async function action(data?:object){
+    if(actionLock.current)return;
+    actionLock.current=true;setBusy(true);setError("");
+    try{
+      const next:LearningView=await (await api(data)).json();
+      setView(next);
+      if(data&&"action" in data&&data.action==="answer")setFeedback(next.correction||"Response saved.");
+    }catch(e){setError(friendlyError(e));}
+    finally{actionLock.current=false;setBusy(false);}
+  }
   return <main className="assessment-shell" aria-busy={busy}><header><Link href="/">Adaptive English</Link><span>{t("ui.074")}</span></header>
     {error&&<div role="alert" className="error">{t(error)} <Link href="/login">{t("Sign in")}</Link><button onClick={()=>action()}>{t("ui.011")}</button></div>}
     <p role="status">{busy?t("Saving…"):""}</p><fieldset disabled={busy||!ready} className="assessment-stage">
-      {view.kind==="assessment_required"?<section className="assessment-card"><h1>{t("ui.075")}</h1><p>{t("ui.076")}</p><Link href="/assessment">{t("ui.077")}</Link></section>:view.kind==="start"?<section className="assessment-card"><h1>{t("ui.078")}</h1><p>{t("ui.079")}</p><button className="primary" onClick={()=>action({action:"start"})}>{t("ui.080")}</button></section>:view.kind==="summary"?<section className="assessment-card"><h1>{t("ui.081")}</h1>{!!view.summary?.completedScenarios.length&&<p>{t("ui.082")} {view.summary.completedScenarios.join(" · ")}</p>}<h2>{t("ui.083")}</h2><ul>{view.summary?.practiced.map(x=><li key={x}>{x}</li>)}</ul><h2>{t("ui.084")}</h2><p>{view.summary?.worked.join(" · ")||t("ui.085")}</p><h2>{t("ui.086")}</h2><p>{view.summary?.needsPractice.join(" · ")||t("ui.087")}</p><h2>{t("ui.088")}</h2><ul>{view.summary?.expressions.map(x=><li key={x}>{x}</li>)}</ul><p>{view.summary?.next}</p><button className="primary" onClick={()=>action({action:"start"})}>{t("ui.089")}</button></section>:<Activity key={view.activityId} view={view} action={action}/>}
+      {feedback!==null?<ResponseFeedback text={feedback} onContinue={()=>setFeedback(null)}/>:view.kind==="assessment_required"?<section className="assessment-card"><h1>{t("ui.075")}</h1><p>{t("ui.076")}</p><Link href="/assessment">{t("ui.077")}</Link></section>:view.kind==="start"?<section className="assessment-card"><h1>{t("ui.078")}</h1><p>{t("ui.079")}</p><button className="primary" onClick={()=>action({action:"start"})}>{t("ui.080")}</button></section>:view.kind==="summary"?<section className="assessment-card"><h1>{t("ui.081")}</h1>{!!view.summary?.completedScenarios.length&&<p>{t("ui.082")} {view.summary.completedScenarios.join(" · ")}</p>}<h2>{t("ui.083")}</h2><ul>{view.summary?.practiced.map(x=><li key={x}>{x}</li>)}</ul><h2>{t("ui.084")}</h2><p>{view.summary?.worked.join(" · ")||t("ui.085")}</p><h2>{t("ui.086")}</h2><p>{view.summary?.needsPractice.join(" · ")||t("ui.087")}</p><h2>{t("ui.088")}</h2><ul>{view.summary?.expressions.map(x=><li key={x}>{x}</li>)}</ul><p>{view.summary?.next}</p><button className="primary" onClick={()=>action({action:"start"})}>{t("ui.089")}</button></section>:<Activity key={view.activityId} view={view} action={action}/>}
     </fieldset><footer>{t("ui.090")}</footer></main>;
 }
+function ResponseFeedback({text,onContinue}:{text:string;onContinue:()=>void}){const t=useT();
+  const panel=useRef<HTMLElement>(null);
+  useEffect(()=>{panel.current?.focus({preventScroll:true});panel.current?.scrollIntoView({block:"start",behavior:"instant"});},[]);
+  // Acknowledgment only reveals the saved server decision; it never submits an answer.
+  return <section ref={panel} tabIndex={-1} aria-labelledby="response-feedback-title" className="assessment-card">
+    <h1 id="response-feedback-title">{t("Response feedback")}</h1>
+    <p role="status" className="support">{t(text)}</p>
+    <button className="primary" onClick={onContinue}>{t("Continue")}</button>
+  </section>;
+}
 function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promise<void>}){const t=useT();
-  const feedbackRef=useRef<HTMLDivElement>(null);
-  useEffect(()=>{
-    // A new activity replaces a form lower down the page. Bring its saved
-    // response feedback into view before the learner tackles the next prompt.
-    if(!view.correction)return;
-    feedbackRef.current?.focus({preventScroll:true});
-    feedbackRef.current?.scrollIntoView({block:"start",behavior:"instant"});
-  },[view.activityId,view.correction]);
   const [text,setText]=useDraft(view.activityId);const [voice,setVoice]=useState(view.savedVoice?.id??null);const [transcript,setTranscript]=useState(view.savedVoice?.transcript??"");const [showText,setShowText]=useState(false);
   const preferences=useVoicePreferences();const revealedAutomatically=useRef(false);
   useEffect(()=>{if(preferences.transcript==="automatic"&&view.audio&&!view.transcript&&!revealedAutomatically.current){revealedAutomatically.current=true;void action({action:"support",activityId:view.activityId,kind:"transcript"});}},[preferences.transcript,view.audio,view.transcript,view.activityId,action]);
@@ -38,7 +50,7 @@ function Activity({view,action}:{view:LearningView;action:(data?:object)=>Promis
   const help=(kind:string)=>action({action:"support",activityId:view.activityId,kind});
   return <section className="assessment-card">
     <p className="eyebrow">{t(methodLabels[view.method?.replaceAll(" ","_") as keyof typeof methodLabels]??view.method)}</p><h1 lang="en">{view.objective}</h1>
-    {view.correction&&<div ref={feedbackRef} tabIndex={-1} role="status" className="support" style={{scrollMarginBlockStart:"1rem"}}>{t(view.correction)}</div>}
+    {view.correction&&<div role="status" className="support">{t(view.correction)}</div>}
     {preferences.transcript==="after_attempt"&&view.previousPrompt&&<p className="support">{t("ui.041")} {view.previousPrompt}</p>}<h2 lang="en">{view.prompt}</h2>{view.nativeHelp&&<p className="support">{view.nativeHelp}</p>}{view.explanation&&<p>{view.explanation}</p>}
     <fieldset  className="assessment-stage">
       {view.voiceAllowed&&(view.audio||view.spoken)&&<VoiceTools speechText={view.speechText} spoken={!!view.spoken} speed={view.speed??1} enhancedAvailable={!!view.enhancedAvailable} request={voiceRequest} played={()=>help("replay")} confirmed={(id,value)=>{setVoice(id);setTranscript(value);setText("");}}/>}

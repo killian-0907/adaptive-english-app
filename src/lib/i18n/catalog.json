@@ -1,4 +1,6 @@
 {
+  "learning.feedback": {"en": "Response feedback", "zh": "回答反馈", "es": "Comentarios sobre tu respuesta"},
+  "learning.saved": {"en": "Response saved.", "zh": "回答已保存。", "es": "Respuesta guardada."},
   "ui.001": {
     "en": "Find a comfortable starting point for useful, everyday English. 从适合你的起点开始。",
     "zh": "从适合你的起点开始，学习实用英语。",

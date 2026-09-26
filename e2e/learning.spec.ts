@@ -19,9 +19,11 @@ async function post(page:Page,data:object){return page.request.post("/api/learni
 test("feedback stays in the mobile viewport after submitting from lower down the page",async({page})=>{
   await page.setViewportSize({width:390,height:600});
   const initial:LearningView={kind:"activity",activityId:randomUUID(),sessionId:randomUUID(),objective:"Make a polite request",method:"sentence building",prompt:"You are talking to a colleague. Ask politely for the report. Put the words in order: please / report / the / send / me",spoken:false,audio:false,voiceAllowed:false};
+  let answers=0;
   const correction="Your message worked. Let's try another context.";
   await page.route("**/api/learning",async route=>{
     const command=route.request().postDataJSON();
+    if(command?.action==="answer")answers++;
     if(command?.action==="start"||command?.action==="answer")await route.fulfill({json:command.action==="start"?initial:{...initial,activityId:randomUUID(),correction,prompt:"Now make a polite request in another context."}});
     else await route.continue();
   });
@@ -31,7 +33,11 @@ test("feedback stays in the mobile viewport after submitting from lower down the
     await page.getByRole("button",{name:"Check response",exact:true}).click();
     const feedback=page.getByRole("status").filter({hasText:correction});
     await expect(feedback).toBeInViewport();
-    await expect(feedback).toBeFocused();
+    await expect(page.getByRole("region",{name:"Response feedback"})).toBeFocused();
+    await expect(page.getByRole("heading",{name:"Now make a polite request in another context."})).toHaveCount(0);
+    await expect(page.getByLabel("Your response",{exact:true})).toHaveCount(0);
+    await page.getByRole("button",{name:"Continue",exact:true}).click();
+    expect(answers).toBe(1);
     await expect(page.getByRole("heading",{name:"Now make a polite request in another context."})).toBeVisible();
   }finally{await f.cleanup();}
 });
@@ -39,6 +45,7 @@ test("A: assessed learner completes deterministic practice, updates model and re
   const f=await fixture(page);try{
     await page.setViewportSize({width:390,height:844});const before=await view(page);expect(before.options?.length).toBeGreaterThan(0);
     await page.getByLabel("Water, please.",{exact:true}).check();await page.getByRole("button",{name:"Check response",exact:true}).click();await expect(page.getByText("Your message worked. Let's try another context.",{exact:true})).toBeVisible();await expect(page.getByText("Your message worked. Let's try another context.",{exact:true})).toBeInViewport();
+    await page.getByRole("button",{name:"Continue",exact:true}).click();
     const after=await view(page);expect(after.activityId).not.toBe(before.activityId);expect(after.method).toBe("transfer");
     const events=await f.db.from("evidence_events").select("id,processor_status,modality").eq("activity_id",before.activityId);expect(events.data).toHaveLength(1);expect(events.data?.[0]).toMatchObject({processor_status:"applied",modality:"reading_recognition"});
     const changes=await f.db.from("learner_model_changes").select("id").eq("user_id",f.user.id).eq("model_version","learning-v1");expect(changes.data?.length).toBeGreaterThanOrEqual(2);
